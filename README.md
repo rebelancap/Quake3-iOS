@@ -4,6 +4,26 @@
 
 &nbsp;
 
+Background: I could not get @tomkidd's port to work with any of my controllers: Backbone Pro, Gamesir G8, any bluetooth controllers, etc. I know very little about coding, so Claude is to thank for most of this. Slowly vibe coded in MFi Controller support, mod support, file management support (for `.cfg` files, mods, etc), background handling (stop rendering and flush for more stability/battery life), virtual keyboard & mouse support, etc. More ideas of mine to come, like iOS shortcuts to launch mods directly, maybe a virtual right joystick for those without controllers, etc.
+
+## Instructions
+
+Compiling: See @tomkidd's instructions below, but easiest way for me was to clone project in Xcode, select Quake3-iOS Target > Build Phases > Copy Bundle Resources > + button at bottom > Add Other... > Select your baseq3 folder (location doesn't matter) > Create folder references > Finish
+Then make sure you change Team and Bundle Identifier in Signging & Capabilities. Then Build to your phone!
+
+Set up your `.cfg` files (containing your settings and bindings) and place in baseq3 or other mod folders. [Here are my examples](https://github.com/rebelancap/Quake3-iOS/wiki/Configuration-Files-Examples) for baseq3 and q3ut4 (Urban Terror).
+
+Use macOS Finder or Files app to transfer files. Copy mod folders to Quake III Arena folder. Put `autoexec.cfg` in the mod folder.
+
+Tap the π symbol in the bottom right corner to launch full version of Quake 3. (A slower way is use the custom menu to create any game, then press START, Exit Arena.) 
+
+You can navigate the Q3 menus by using DPAD, A (Enter), B or START (Esc). Or use left joystick to move mouse, Right Trigger to left mouse click. These would have to be changed in Xcode, but you can generally change any in-game bindings/preferences with the `.cfg` files. 
+Press both thumbsticks down to triggle console + virtual keyboard.
+
+---
+
+Original README:
+
 This is my port of Quake III: Arena for iOS, running in modern resolutions including the full width of the iPhone X. I have also made a target and version for tvOS to run on Apple TV.
 
 ![screenshot](https://raw.githubusercontent.com/tomkidd/Quake3-iOS/master/ss_quake3.png)
