@@ -6,10 +6,49 @@
 
 Background: I could not get @tomkidd's port to work with any of my controllers: Backbone Pro, Gamesir G8, any bluetooth controllers, etc. I know very little about coding, so Claude is to thank for most of this. Slowly vibe coded in MFi Controller support, mod support, file management support (for `.cfg` files, mods, etc), background handling (stop rendering and flush for more stability/battery life), virtual keyboard & mouse support, hiding on-screen controls when controller is connected, etc. More ideas of mine to come, like iOS shortcuts to launch mods directly, maybe a virtual right joystick for those without controllers, etc.
 
-## Instructions
+# Building Quake3-iOS
 
-Compiling: See @tomkidd's instructions below, but easiest way for me was to clone project in Xcode, select Quake3-iOS Target > Build Phases > Copy Bundle Resources > + button at bottom > Add Other... > Select your baseq3 folder (location doesn't matter) > Create folder references > Finish
-Then make sure you change Team and Bundle Identifier in Signging & Capabilities. Then Build to your phone!
+## Prerequisites
+- Xcode (latest version recommended)
+- iOS Developer Account (free or paid)
+- Quake 3 Arena game files (baseq3 folder)
+
+## Step-by-Step Instructions
+
+**1. Clone the Project**
+- Open Xcode
+- File → Clone Repository
+- Enter: `https://github.com/rebelancap/Quake3-iOS`
+- Choose a location and clone
+
+**2. Add Game Files**
+- In Xcode, select the **Quake3-iOS** target
+- Go to **Build Phases** tab
+- Expand **Copy Bundle Resources**
+- Click the **+** button at the bottom
+- Select **Add Other...**
+- Browse to your `baseq3` folder (contains game files like pak0.pk3)
+- Select the folder and click **Add**
+- Choose **Create folder references** (important!)
+- Click **Finish**
+
+**3. Configure Signing**
+- Select the **Quake3-iOS** target
+- Go to **Signing & Capabilities** tab
+- Change **Team** to your Apple Developer account
+- Change **Bundle Identifier** to something unique (e.g., `com.yourname.quake3ios`)
+
+**4. Build and Run**
+- Connect your iOS device
+- Select your device from the scheme dropdown (top left)
+- Click the **Play** button or press **Cmd+R**
+
+## Notes
+- You'll need legitimate Quake 3 Arena game files
+- First build may take several minutes
+- Make sure your device is trusted for development (Settings → General → VPN & Device Management)
+
+## Important Info
 
 Set up your `.cfg` files (containing your settings and bindings) and place in baseq3 or other mod folders. [Here are my examples](https://github.com/rebelancap/Quake3-iOS/wiki/Configuration-Files-Examples) for baseq3 and q3ut4 (Urban Terror).
 
