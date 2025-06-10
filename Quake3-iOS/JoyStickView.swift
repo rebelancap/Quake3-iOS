@@ -4,8 +4,8 @@ import CoreGraphics
 
 protocol JoystickDelegate: class {
     
-    func handleJoyStick(angle: CGFloat, displacement: CGFloat)
-    func handleJoyStickPosition(x: CGFloat, y: CGFloat)
+    func handleJoyStick(sender: JoyStickView, angle: CGFloat, displacement: CGFloat)
+    func handleJoyStickPosition(sender: JoyStickView, x: CGFloat, y: CGFloat)
     
 }
 
@@ -309,7 +309,7 @@ public final class JoyStickView: UIView {
             //
             self.angle = newClampedDisplacement != 0.0 ? CGFloat(180.0 - newAngleRadians * 180.0 / Float.pi) : 0.0
             //            monitor?(angle, displacement)
-            self.delegate?.handleJoyStick(angle: angle, displacement: displacement)
+            self.delegate?.handleJoyStick(sender: self, angle: angle, displacement: displacement)
             
             
             //            print("delta x: \(delta.dx) delta y: \(delta.dy)")
@@ -317,7 +317,7 @@ public final class JoyStickView: UIView {
             let new_x = (delta.dx / (radius * 2))
             let new_y = (delta.dy / (radius * 2)) * -1
             //            print("new_x: \(new_x) new_y: \(new_y)")
-            self.delegate?.handleJoyStickPosition(x: new_x, y: new_y)
+            self.delegate?.handleJoyStickPosition(sender: self, x: new_x, y: new_y)
         }
     }
 }

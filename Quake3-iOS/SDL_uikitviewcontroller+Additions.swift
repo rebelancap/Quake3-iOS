@@ -7,6 +7,10 @@
 
 import UIKit
 
+// Give access to Virtual Keyboard
+@_silgen_name("Con_ToggleVirtualKeyboard")
+func Con_ToggleVirtualKeyboard()
+
 extension SDL_uikitviewcontroller {
     
     // A method of getting around the fact that Swift extensions cannot have stored properties
@@ -23,6 +27,7 @@ extension SDL_uikitviewcontroller {
         static var _f1Button = UIButton()
         static var _prevWeaponButton = UIButton()
         static var _nextWeaponButton = UIButton()
+        static var _rightJoystickView = JoyStickView(frame: .zero)
     }
     
     var fireButton:UIButton {
@@ -123,9 +128,18 @@ extension SDL_uikitviewcontroller {
             Holder._nextWeaponButton = newValue
         }
     }
+    
+    var rightJoystickView:JoyStickView {
+        get {
+            return Holder._rightJoystickView
+        }
+        set(newValue) {
+            Holder._rightJoystickView = newValue
+        }
+    }
 
     @objc func fireButton(rect: CGRect) -> UIButton {
-        fireButton = UIButton(frame: CGRect(x: rect.width - 155, y: rect.height - 90, width: 75, height: 75))
+        fireButton = UIButton(frame: CGRect(x: rect.width - 250, y: rect.height - 90, width: 75, height: 75))
         fireButton.setTitle("FIRE", for: .normal)
         fireButton.setBackgroundImage(UIImage(named: "JoyStickBase")!, for: .normal)
         fireButton.addTarget(self, action: #selector(self.firePressed), for: .touchDown)
@@ -201,9 +215,8 @@ extension SDL_uikitviewcontroller {
     
     @objc func f1Button(rect: CGRect) -> UIButton {
         f1Button = UIButton(frame: CGRect(x: rect.width - 40, y: 10, width: 30, height: 30))
-        f1Button.setTitle(" F1 ", for: .normal)
-        f1Button.addTarget(self, action: #selector(self.f1Pressed), for: .touchDown)
-        f1Button.addTarget(self, action: #selector(self.f1Released), for: .touchUpInside)
+        f1Button.setTitle(" C ", for: .normal)  // Changed from " F1 " to " C "
+        f1Button.addTarget(self, action: #selector(self.consoleTogglePressed), for: .touchDown)
         f1Button.layer.borderColor = UIColor.white.cgColor
         f1Button.layer.borderWidth = CGFloat(1)
         f1Button.alpha = 0.5
@@ -222,6 +235,22 @@ extension SDL_uikitviewcontroller {
         nextWeaponButton.addTarget(self, action: #selector(self.nextWeaponPressed), for: .touchDown)
         nextWeaponButton.addTarget(self, action: #selector(self.nextWeaponReleased), for: .touchUpInside)
         return nextWeaponButton
+    }
+    
+    @objc func rightJoyStick(rect: CGRect) -> JoyStickView {
+        let size = CGSize(width: 100.0, height: 100.0)
+        let rightJoystickFrame = CGRect(origin: CGPoint(x: rect.width - size.width - 50.0,
+                                                         y: (rect.height - size.height - 50.0)),
+                                        size: size)
+        rightJoystickView = JoyStickView(frame: rightJoystickFrame)
+        rightJoystickView.delegate = self
+        rightJoystickView.tag = 2  // Different tag from left joystick
+        
+        rightJoystickView.movable = false
+        rightJoystickView.alpha = 0.5
+        rightJoystickView.baseAlpha = 0.5
+        rightJoystickView.handleTintColor = UIColor.darkGray
+        return rightJoystickView
     }
 
     
@@ -257,12 +286,9 @@ extension SDL_uikitviewcontroller {
         Key_Event(27, qboolean(0), qboolean(1))
     }
         
-    @objc func f1Pressed(sender: UIButton!) {
-        Key_Event(145, qboolean(1), qboolean(1))
-    }
-    
-    @objc func f1Released(sender: UIButton!) {
-        Key_Event(145, qboolean(0), qboolean(1))
+    @objc func consoleTogglePressed(sender: UIButton!) {
+        // Match what IN_ToggleiOSKeyboard does in sdl_input.c
+        Con_ToggleVirtualKeyboard()  // This opens console AND virtual keyboard
     }
     
     @objc func prevWeaponPressed(sender: UIButton!) {
@@ -301,11 +327,15 @@ extension SDL_uikitviewcontroller {
     
     @objc func toggleControls(_ hide: Bool) {
         self.fireButton.isHidden = hide
-        self.jumpButton.isHidden = hide
+        // self.jumpButton.isHidden = hide  // Already commented out
         self.joystickView.isHidden = hide
+        self.rightJoystickView.isHidden = hide
         self.buttonStack.isHidden = hide
         self.prevWeaponButton.isHidden = hide
         self.nextWeaponButton.isHidden = hide
+        
+        // Keep F1 (console) button always visible
+        // self.f1Button.isHidden = hide  // Comment this out or remove it
     }
     
     open override func viewDidLoad() {
@@ -322,42 +352,87 @@ extension SDL_uikitviewcontroller {
 
 extension SDL_uikitviewcontroller: JoystickDelegate {
     
-    func handleJoyStickPosition(x: CGFloat, y: CGFloat) {
+    func handleJoyStickPosition(sender: JoyStickView, x: CGFloat, y: CGFloat) {
+        // Deadzone configuration
+        let deadzone: CGFloat = 0.02  // Adjust this (0.0 to 1.0)
+        
+        // Apply deadzone
+        var adjustedX = x
+        var adjustedY = y
+        let magnitude = sqrt(x * x + y * y)
+        
+        if magnitude < deadzone {
+            adjustedX = 0
+            adjustedY = 0
+        } else {
+            // Scale from deadzone to 1.0
+            let scaledMagnitude = (magnitude - deadzone) / (1.0 - deadzone)
+            adjustedX = (x / magnitude) * scaledMagnitude
+            adjustedY = (y / magnitude) * scaledMagnitude
+        }
+        
+        if sender.tag == 2 {
+            // Right joystick - for aiming/looking
+            let sensitivity: CGFloat = 0.6
+            let acceleration: CGFloat = 1.2  // Power curve for acceleration (1.0 = linear, 2.0 = quadratic)
+            // Typically want 1:2 sensitivity:acceleration ratio
+            // Most console FPS games use values between 1.5 and 2.5 for aiming acceleration
+            
+            // Apply acceleration curve
+            let accelX = adjustedX * pow(abs(adjustedX), acceleration - 1)
+            let accelY = adjustedY * pow(abs(adjustedY), acceleration - 1)
+            
+            // Scale to mouse pixel movement (try different values here)
+            let mouseScale: CGFloat = 50  // This is your main tuning parameter | make it higher for older phones
+            
+            let deltaX = Int32(accelX * sensitivity * mouseScale)
+            let deltaY = Int32(-accelY * sensitivity * mouseScale) // inverted Y
+            
+            // Send mouse motion events
+            if deltaX != 0 || deltaY != 0 {
+                CL_MouseEvent(deltaX, deltaY, Int32(Sys_Milliseconds()), qtrue)
+            }
+        } else {
+            // Left joystick - proportional movement
+            if adjustedY != 0 {
+                if adjustedY > 0 {
+                    cl_joyscale_y.0 = Int32(abs(adjustedY) * 60)
+                    Key_Event(132, qboolean(1), qboolean(1))
+                    Key_Event(133, qboolean(0), qboolean(1))
+                } else {
+                    cl_joyscale_y.1 = Int32(abs(adjustedY) * 60)
+                    Key_Event(132, qboolean(0), qboolean(1))
+                    Key_Event(133, qboolean(1), qboolean(1))
+                }
+            } else {
+                cl_joyscale_y.0 = 0
+                cl_joyscale_y.1 = 0
+                Key_Event(132, qboolean(0), qboolean(1))
+                Key_Event(133, qboolean(0), qboolean(1))
+            }
 
-        if y > 0 {
-            cl_joyscale_y.0 = Int32(abs(y) * 60)
-            Key_Event(132, qboolean(1), qboolean(1))
-            Key_Event(133, qboolean(0), qboolean(1))
-        } else if y < 0 {
-            cl_joyscale_y.1 = Int32(abs(y) * 60)
-            Key_Event(132, qboolean(0), qboolean(1))
-            Key_Event(133, qboolean(1), qboolean(1))
-        } else {
-            cl_joyscale_y.0 = 0
-            cl_joyscale_y.1 = 0
-            Key_Event(132, qboolean(0), qboolean(1))
-            Key_Event(133, qboolean(0), qboolean(1))
+            // Use strafe keys (A=97, D=100) instead of turn keys & Remove the 0.25 threshold for X axis
+            if adjustedX != 0 {
+                if adjustedX > 0 {
+                    cl_joyscale_x.0 = Int32(abs(adjustedX) * 60)
+                    Key_Event(100, qboolean(1), qboolean(1))  // 'D' - strafe right
+                    Key_Event(97, qboolean(0), qboolean(1))   // Release 'A'
+                } else {
+                    cl_joyscale_x.1 = Int32(abs(adjustedX) * 60)
+                    Key_Event(97, qboolean(1), qboolean(1))   // 'A' - strafe left
+                    Key_Event(100, qboolean(0), qboolean(1))  // Release 'D'
+                }
+            } else {
+                cl_joyscale_x.0 = 0
+                cl_joyscale_x.1 = 0
+                Key_Event(97, qboolean(0), qboolean(1))
+                Key_Event(100, qboolean(0), qboolean(1))
+            }
         }
-        
-        if x > 0.25 {
-            cl_joyscale_x.0 = Int32(abs(y) * 20)
-            Key_Event(135, qboolean(1), qboolean(1))
-            Key_Event(134, qboolean(0), qboolean(1))
-        } else if x < -0.25 {
-            cl_joyscale_x.1 = Int32(abs(y) * 20)
-            Key_Event(135, qboolean(0), qboolean(1))
-            Key_Event(134, qboolean(1), qboolean(1))
-        } else {
-            cl_joyscale_x.0 = 0
-            cl_joyscale_x.1 = 0
-            Key_Event(135, qboolean(0), qboolean(1))
-            Key_Event(134, qboolean(0), qboolean(1))
-        }
-        
     }
     
-    func handleJoyStick(angle: CGFloat, displacement: CGFloat) {
-//        print("angle: \(angle) displacement: \(displacement)")
+    func handleJoyStick(sender: JoyStickView, angle: CGFloat, displacement: CGFloat) {
+        // print("angle: \(angle) displacement: \(displacement)")
     }
     
 }

@@ -81,9 +81,21 @@ void Sys_AddControls(SDL_Window *sdlWindow) {
         // adding on-screen controls -tkidd
         SDL_uikitviewcontroller *rootVC = (SDL_uikitviewcontroller *)GetSDLViewController(sdlWindow);
 
-        [rootVC.view addSubview:[rootVC fireButtonWithRect:[rootVC.view frame]]];
-        [rootVC.view addSubview:[rootVC jumpButtonWithRect:[rootVC.view frame]]];
+        // Fire button - moved more to the left to make room for right joystick
+        UIView *fireButton = [rootVC fireButtonWithRect:[rootVC.view frame]];
+        // Adjust the fire button position here if needed
+        [rootVC.view addSubview:fireButton];
+        
+        // Jump button - commented out
+        // [rootVC.view addSubview:[rootVC jumpButtonWithRect:[rootVC.view frame]]];
+        
+        // Left joystick for movement
         [rootVC.view addSubview:[rootVC joyStickWithRect:[rootVC.view frame]]];
+        
+        // Right joystick for aiming - new addition
+        UIView *rightJoyStick = [rootVC rightJoyStickWithRect:[rootVC.view frame]];
+        [rootVC.view addSubview:rightJoyStick];
+        
         [rootVC.view addSubview:[rootVC buttonStackWithRect:[rootVC.view frame]]];
         [rootVC.view addSubview:[rootVC f1ButtonWithRect:[rootVC.view frame]]];
         [rootVC.view addSubview:[rootVC prevWeaponButtonWithRect:[rootVC.view frame]]];
@@ -112,7 +124,7 @@ void Sys_HideControls(SDL_Window *sdlWindow) {
         
         // Hide all control subviews
         for (UIView *subview in [rootVC.view.subviews copy]) {
-            if ([subview isKindOfClass:[JoyStickView class]] || 
+            if ([subview isKindOfClass:[JoyStickView class]] ||
                 [subview isKindOfClass:[UIButton class]]) {
                 subview.hidden = YES;
                 [subview removeFromSuperview];
@@ -142,16 +154,26 @@ void Sys_ShowControls(SDL_Window *sdlWindow) {
         dispatch_async(dispatch_get_main_queue(), ^{
             // Remove any existing controls first
             for (UIView *subview in [rootVC.view.subviews copy]) {
-                if ([subview isKindOfClass:[JoyStickView class]] || 
+                if ([subview isKindOfClass:[JoyStickView class]] ||
                     [subview isKindOfClass:[UIButton class]]) {
                     [subview removeFromSuperview];
                 }
             }
             
             // Add controls back
-            [rootVC.view addSubview:[rootVC fireButtonWithRect:[rootVC.view frame]]];
-            [rootVC.view addSubview:[rootVC jumpButtonWithRect:[rootVC.view frame]]];
+            UIView *fireButton = [rootVC fireButtonWithRect:[rootVC.view frame]];
+            [rootVC.view addSubview:fireButton];
+            
+            // Jump button - commented out
+            // [rootVC.view addSubview:[rootVC jumpButtonWithRect:[rootVC.view frame]]];
+            
+            // Left joystick for movement
             [rootVC.view addSubview:[rootVC joyStickWithRect:[rootVC.view frame]]];
+            
+            // Right joystick for aiming
+            UIView *rightJoyStick = [rootVC rightJoyStickWithRect:[rootVC.view frame]];
+            [rootVC.view addSubview:rightJoyStick];
+            
             [rootVC.view addSubview:[rootVC buttonStackWithRect:[rootVC.view frame]]];
             [rootVC.view addSubview:[rootVC f1ButtonWithRect:[rootVC.view frame]]];
             [rootVC.view addSubview:[rootVC prevWeaponButtonWithRect:[rootVC.view frame]]];
