@@ -4,7 +4,7 @@
 
 &nbsp;
 
-Background: I could not get @tomkidd's port to work with any of my controllers: Backbone Pro, Gamesir G8, any bluetooth controllers, etc. I know very little about coding, so Claude is to thank for most of this. Slowly vibe coded in MFi Controller support, mod support, file management support (for `.cfg` files, mods, etc), background handling (stop rendering and flush for more stability/battery life), virtual keyboard & mouse support, etc. More ideas of mine to come, like iOS shortcuts to launch mods directly, maybe a virtual right joystick for those without controllers, etc.
+Background: I could not get @tomkidd's port to work with any of my controllers: Backbone Pro, Gamesir G8, any bluetooth controllers, etc. I know very little about coding, so Claude is to thank for most of this. Slowly vibe coded in MFi Controller support, mod support, file management support (for `.cfg` files, mods, etc), background handling (stop rendering and flush for more stability/battery life), virtual keyboard & mouse support, hiding on-screen controls when controller is connected, etc. More ideas of mine to come, like iOS shortcuts to launch mods directly, maybe a virtual right joystick for those without controllers, etc.
 
 ## Instructions
 
@@ -19,6 +19,8 @@ Tap the π symbol in the bottom right corner to launch full version of Quake 3. 
 
 You can navigate the Q3 menus by using DPAD, A (Enter), B or START (Esc). Or use left joystick to move mouse, Right Trigger to left mouse click. These would have to be changed in Xcode, but you can generally change any in-game bindings/preferences with the `.cfg` files. 
 Press both thumbsticks down to triggle console + virtual keyboard.
+
+**Note!** If your controller gets disconnected, you need to restart the game to reconnect the controller. Had to disable SDL controller and enable Native GameController Framework to get MFi controllers to work. Claude and I could not figure out a way to solve this.
 
 ---
 
