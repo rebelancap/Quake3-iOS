@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 52;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -180,7 +180,6 @@
 		A1565FCE2109F30E00FA9BC9 /* jdhuff.c in Sources */ = {isa = PBXBuildFile; fileRef = A179C0612101470F00D3C611 /* jdhuff.c */; settings = {COMPILER_FLAGS = "-w"; }; };
 		A1565FD42109F30E00FA9BC9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1902F68210939BC008823BB /* Assets.xcassets */; };
 		A1565FD52109F30E00FA9BC9 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1902F65210939BA008823BB /* Main.storyboard */; };
-		A1565FD62109F30E00FA9BC9 /* baseq3 in Resources */ = {isa = PBXBuildFile; fileRef = A1902E9A21075F1C008823BB /* baseq3 */; };
 		A1565FE2210A0D3E00FA9BC9 /* libcurl_tvOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A1565FE1210A0D3E00FA9BC9 /* libcurl_tvOS.a */; };
 		A1565FE4210A0DEF00FA9BC9 /* libcurl_iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A1565FDC210A0CEA00FA9BC9 /* libcurl_iOS.a */; };
 		A1565FE8210A0E4A00FA9BC9 /* libssl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A1565FE6210A0E4A00FA9BC9 /* libssl.a */; };
@@ -384,7 +383,6 @@
 		A18F9699239B09D40053E3B1 /* UIImage-Targa.m in Sources */ = {isa = PBXBuildFile; fileRef = A18F9697239B09D40053E3B1 /* UIImage-Targa.m */; };
 		A18F969D23A04F070053E3B1 /* tga_reader.c in Sources */ = {isa = PBXBuildFile; fileRef = A18F969C23A04F070053E3B1 /* tga_reader.c */; };
 		A18F969E23A04F070053E3B1 /* tga_reader.c in Sources */ = {isa = PBXBuildFile; fileRef = A18F969C23A04F070053E3B1 /* tga_reader.c */; };
-		A1902E9B21075F1C008823BB /* baseq3 in Resources */ = {isa = PBXBuildFile; fileRef = A1902E9A21075F1C008823BB /* baseq3 */; };
 		A196B6882115F5680031CEB8 /* ServerBrowserViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A196B6872115F5680031CEB8 /* ServerBrowserViewController.swift */; };
 		A196B6A72115F7C50031CEB8 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = A196B68B2115F7C50031CEB8 /* Server.swift */; };
 		A196B6AB2115F7C50031CEB8 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = A196B68D2115F7C50031CEB8 /* Player.swift */; };
@@ -455,6 +453,16 @@
 		A1E0ECF9236A9F51003F22FB /* sdl_input.c in Sources */ = {isa = PBXBuildFile; fileRef = A1E0ECF1236A9F51003F22FB /* sdl_input.c */; settings = {COMPILER_FLAGS = "-w"; }; };
 		A1E8B32223714505005C6CA8 /* sdl_glimp.c in Sources */ = {isa = PBXBuildFile; fileRef = A1E0ECEF236A9F51003F22FB /* sdl_glimp.c */; settings = {COMPILER_FLAGS = "-w"; }; };
 		A1E8B323237234F8005C6CA8 /* sdl_glimp.c in Sources */ = {isa = PBXBuildFile; fileRef = A1E0ECEF236A9F51003F22FB /* sdl_glimp.c */; settings = {COMPILER_FLAGS = "-w"; }; };
+		D9DAB8552DF48B68002F6B72 /* baseq3 in Resources */ = {isa = PBXBuildFile; fileRef = D9DAB8542DF48B68002F6B72 /* baseq3 */; };
+		D9DAB85E2DF49378002F6B72 /* ios_gamecontroller_bridge.m in Sources */ = {isa = PBXBuildFile; fileRef = D9DAB85B2DF49378002F6B72 /* ios_gamecontroller_bridge.m */; };
+		D9DAB85F2DF49378002F6B72 /* IOSGameController.m in Sources */ = {isa = PBXBuildFile; fileRef = D9DAB85D2DF49378002F6B72 /* IOSGameController.m */; };
+		D9DAB8602DF49378002F6B72 /* ios_gamecontroller_bridge.m in Sources */ = {isa = PBXBuildFile; fileRef = D9DAB85B2DF49378002F6B72 /* ios_gamecontroller_bridge.m */; };
+		D9DAB8612DF49378002F6B72 /* IOSGameController.m in Sources */ = {isa = PBXBuildFile; fileRef = D9DAB85D2DF49378002F6B72 /* IOSGameController.m */; };
+		D9DAB8632DF493DF002F6B72 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D9DAB8622DF493DF002F6B72 /* GameController.framework */; };
+		D9DAB8652DF493F1002F6B72 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D9DAB8642DF493F1002F6B72 /* GameController.framework */; };
+		D9DAB8672DF493FB002F6B72 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D9DAB8662DF493FB002F6B72 /* CoreHaptics.framework */; };
+		D9DAB8752DF74EC1002F6B72 /* con_keyboard.c in Sources */ = {isa = PBXBuildFile; fileRef = D9DAB8742DF74EBF002F6B72 /* con_keyboard.c */; };
+		D9DAB8762DF74EC1002F6B72 /* con_keyboard.c in Sources */ = {isa = PBXBuildFile; fileRef = D9DAB8742DF74EBF002F6B72 /* con_keyboard.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -766,7 +774,6 @@
 		A18F969B23A04F070053E3B1 /* tga_reader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tga_reader.h; sourceTree = "<group>"; };
 		A18F969C23A04F070053E3B1 /* tga_reader.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = tga_reader.c; sourceTree = "<group>"; };
 		A1902E982103EFC7008823BB /* bridging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bridging.h; sourceTree = "<group>"; };
-		A1902E9A21075F1C008823BB /* baseq3 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = baseq3; path = "../../../Library/Application Support/quake3/baseq3"; sourceTree = "<group>"; };
 		A1902F63210939BA008823BB /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		A1902F66210939BA008823BB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		A1902F68210939BC008823BB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -815,6 +822,17 @@
 		A1E8B31D23712A37005C6CA8 /* AppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		A1E8B3242372397C005C6CA8 /* qgl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = qgl.h; sourceTree = "<group>"; };
 		A1F4032225D22793009B1C92 /* qgles.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = qgles.h; sourceTree = "<group>"; };
+		D9DAB8542DF48B68002F6B72 /* baseq3 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = baseq3; path = "../../Library/CloudStorage/OneDrive-Personal/Games/Quake 3/baseq3"; sourceTree = "<group>"; };
+		D9DAB85A2DF49378002F6B72 /* ios_gamecontroller_bridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ios_gamecontroller_bridge.h; sourceTree = "<group>"; };
+		D9DAB85B2DF49378002F6B72 /* ios_gamecontroller_bridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ios_gamecontroller_bridge.m; sourceTree = "<group>"; };
+		D9DAB85C2DF49378002F6B72 /* IOSGameController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IOSGameController.h; sourceTree = "<group>"; };
+		D9DAB85D2DF49378002F6B72 /* IOSGameController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = IOSGameController.m; sourceTree = "<group>"; };
+		D9DAB8622DF493DF002F6B72 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
+		D9DAB8642DF493F1002F6B72 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS18.5.sdk/System/Library/Frameworks/GameController.framework; sourceTree = DEVELOPER_DIR; };
+		D9DAB8662DF493FB002F6B72 /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS18.5.sdk/System/Library/Frameworks/CoreHaptics.framework; sourceTree = DEVELOPER_DIR; };
+		D9DAB8682DF615F0002F6B72 /* sys_ios.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sys_ios.h; sourceTree = "<group>"; };
+		D9DAB8742DF74EBF002F6B72 /* con_keyboard.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = con_keyboard.c; sourceTree = "<group>"; };
+		D9DAB8772DF77BBE002F6B72 /* con_keyboard.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = con_keyboard.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -822,6 +840,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D9DAB8672DF493FB002F6B72 /* CoreHaptics.framework in Frameworks */,
+				D9DAB8652DF493F1002F6B72 /* GameController.framework in Frameworks */,
 				A1DBB61724A161A40021BA6F /* ZIPFoundation in Frameworks */,
 				A1CA510825A40F1D00D72650 /* CoreHaptics.framework in Frameworks */,
 				A1CA510B25A40F3C00D72650 /* AVFoundation.framework in Frameworks */,
@@ -840,6 +860,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1CA510C25A414AE00D72650 /* CoreHaptics.framework in Frameworks */,
+				D9DAB8632DF493DF002F6B72 /* GameController.framework in Frameworks */,
 				A1DBB64D24A183770021BA6F /* CoreBluetooth.framework in Frameworks */,
 				A1565FEB210A0E6F00FA9BC9 /* libnghttp2_iOS.a in Frameworks */,
 				A1DBB61924A164F90021BA6F /* AVFoundation.framework in Frameworks */,
@@ -850,7 +872,6 @@
 				A1DBB61824A164F90021BA6F /* AudioToolbox.framework in Frameworks */,
 				A1565FE9210A0E4A00FA9BC9 /* libcrypto.a in Frameworks */,
 				A1565FE4210A0DEF00FA9BC9 /* libcurl_iOS.a in Frameworks */,
-				A1CA510C25A414AE00D72650 /* CoreHaptics.framework in Frameworks */,
 				A1DBB61124A160450021BA6F /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -861,7 +882,7 @@
 		A179BFDA210142F900D3C611 = {
 			isa = PBXGroup;
 			children = (
-				A1902E9A21075F1C008823BB /* baseq3 */,
+				D9DAB8542DF48B68002F6B72 /* baseq3 */,
 				A179BFFA210146BF00D3C611 /* Quake3 */,
 				A179BFE5210142FA00D3C611 /* Quake3-iOS */,
 				A1902F60210939BA008823BB /* Quake3-tvOS */,
@@ -1192,6 +1213,7 @@
 		A179C1BA2101472C00D3C611 /* sys */ = {
 			isa = PBXGroup;
 			children = (
+				D9DAB8682DF615F0002F6B72 /* sys_ios.h */,
 				A179C1BC2101472C00D3C611 /* con_log.c */,
 				A179C1C02101472C00D3C611 /* con_passive.c */,
 				A179C1C42101472C00D3C611 /* con_tty.c */,
@@ -1261,6 +1283,9 @@
 		A179C4AD2101853600D3C611 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				D9DAB8662DF493FB002F6B72 /* CoreHaptics.framework */,
+				D9DAB8622DF493DF002F6B72 /* GameController.framework */,
+				D9DAB8642DF493F1002F6B72 /* GameController.framework */,
 				A196B6F92117EE6E0031CEB8 /* iOS */,
 				A196B6FA2117EE750031CEB8 /* tvOS */,
 			);
@@ -1397,11 +1422,17 @@
 		A1E0ECEC236A9F51003F22FB /* sdl */ = {
 			isa = PBXGroup;
 			children = (
+				D9DAB85A2DF49378002F6B72 /* ios_gamecontroller_bridge.h */,
+				D9DAB85B2DF49378002F6B72 /* ios_gamecontroller_bridge.m */,
+				D9DAB85C2DF49378002F6B72 /* IOSGameController.h */,
+				D9DAB85D2DF49378002F6B72 /* IOSGameController.m */,
 				A1E0ECED236A9F51003F22FB /* sdl_icon.h */,
 				A1E0ECEE236A9F51003F22FB /* sdl_gamma.c */,
 				A1E0ECEF236A9F51003F22FB /* sdl_glimp.c */,
 				A1E0ECF0236A9F51003F22FB /* sdl_snd.c */,
 				A1E0ECF1236A9F51003F22FB /* sdl_input.c */,
+				D9DAB8742DF74EBF002F6B72 /* con_keyboard.c */,
+				D9DAB8772DF77BBE002F6B72 /* con_keyboard.h */,
 			);
 			path = sdl;
 			sourceTree = "<group>";
@@ -1461,8 +1492,9 @@
 		A179BFDB210142F900D3C611 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 0940;
-				LastUpgradeCheck = 1200;
+				LastUpgradeCheck = 1640;
 				ORGANIZATIONNAME = "Tom Kidd";
 				TargetAttributes = {
 					A1565F212109F30E00FA9BC9 = {
@@ -1509,7 +1541,6 @@
 				A16B765124ACC4C000D96F09 /* Font Awesome 5 Brands-Regular-400.otf in Resources */,
 				A15AA922211A68E900DE867F /* ServerListViewCell.xib in Resources */,
 				A15103A1210D50DC0087EA86 /* dpquake.ttf in Resources */,
-				A1565FD62109F30E00FA9BC9 /* baseq3 in Resources */,
 				A16B764F24ACC4C000D96F09 /* Font Awesome 5 Free-Solid-900.otf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1518,11 +1549,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D9DAB8552DF48B68002F6B72 /* baseq3 in Resources */,
 				A196B6E521167B890031CEB8 /* ServerListViewCell.xib in Resources */,
 				A179BFF1210142FB00D3C611 /* LaunchScreen.storyboard in Resources */,
 				A16B764C24ACC4C000D96F09 /* Font Awesome 5 Free-Regular-400.otf in Resources */,
 				A151039F210D50D50087EA86 /* dpquake.ttf in Resources */,
-				A1902E9B21075F1C008823BB /* baseq3 in Resources */,
 				A179BFEE210142FB00D3C611 /* Assets.xcassets in Resources */,
 				A179BFEC210142FA00D3C611 /* Main.storyboard in Resources */,
 				A16B765024ACC4C000D96F09 /* Font Awesome 5 Brands-Regular-400.otf in Resources */,
@@ -1634,6 +1665,7 @@
 				A1565F6D2109F30E00FA9BC9 /* jddctmgr.c in Sources */,
 				A1565F6E2109F30E00FA9BC9 /* sv_ccmds.c in Sources */,
 				A1565F6F2109F30E00FA9BC9 /* jquant2.c in Sources */,
+				D9DAB8762DF74EC1002F6B72 /* con_keyboard.c in Sources */,
 				A1565F702109F30E00FA9BC9 /* jidctint.c in Sources */,
 				A1565F712109F30E00FA9BC9 /* be_aas_bspq3.c in Sources */,
 				A17FF2842398CF490003D2E5 /* BotMatchBotViewController.swift in Sources */,
@@ -1674,6 +1706,8 @@
 				A1565F8F2109F30E00FA9BC9 /* l_libvar.c in Sources */,
 				A1565F902109F30E00FA9BC9 /* msg.c in Sources */,
 				A1565F912109F30E00FA9BC9 /* tr_backend.c in Sources */,
+				D9DAB8602DF49378002F6B72 /* ios_gamecontroller_bridge.m in Sources */,
+				D9DAB8612DF49378002F6B72 /* IOSGameController.m in Sources */,
 				A1565F922109F30E00FA9BC9 /* jcprepct.c in Sources */,
 				A17EE1A5211A613E00811AE1 /* ServerInfoViewController.swift in Sources */,
 				A1565F942109F30E00FA9BC9 /* tr_animation.c in Sources */,
@@ -1780,6 +1814,8 @@
 				A1E0ECF8236A9F51003F22FB /* sdl_input.c in Sources */,
 				A179C2D92101472E00D3C611 /* be_ai_gen.c in Sources */,
 				A179C31E2101472E00D3C611 /* jctrans.c in Sources */,
+				D9DAB85E2DF49378002F6B72 /* ios_gamecontroller_bridge.m in Sources */,
+				D9DAB85F2DF49378002F6B72 /* IOSGameController.m in Sources */,
 				A196B6BF2115F7C50031CEB8 /* Q3Parser.swift in Sources */,
 				A179C30C2101472E00D3C611 /* jccolor.c in Sources */,
 				A179C3252101472E00D3C611 /* tr_model_iqm.c in Sources */,
@@ -1792,6 +1828,7 @@
 				A179C35F2101472E00D3C611 /* snd_codec_wav.c in Sources */,
 				A17FF27D23986C860003D2E5 /* BotMatchViewController.swift in Sources */,
 				A196B6CF2115F7C50031CEB8 /* SQLError.swift in Sources */,
+				D9DAB8752DF74EC1002F6B72 /* con_keyboard.c in Sources */,
 				A179C4922101472F00D3C611 /* common.c in Sources */,
 				A179C3342101472E00D3C611 /* tr_shadows.c in Sources */,
 				A179C35D2101472E00D3C611 /* cl_cin.c in Sources */,
@@ -2098,6 +2135,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = NO;
@@ -2164,6 +2202,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -2192,7 +2231,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 9UY8SFDNQ8;
+				DEVELOPMENT_TEAM = 57G8J46Z2T;
 				ENABLE_BITCODE = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2210,6 +2249,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				INFOPLIST_FILE = "Quake3-iOS/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -2218,7 +2258,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Quake3/libs/ios",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.tomkiddconsulting.Quake3-iOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.rebelancap.Quake3-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Quake3-iOS/bridging.h";
 				SWIFT_VERSION = 5.0;
@@ -2233,7 +2273,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 9UY8SFDNQ8;
+				DEVELOPMENT_TEAM = 57G8J46Z2T;
 				ENABLE_BITCODE = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2252,6 +2292,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				INFOPLIST_FILE = "Quake3-iOS/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -2260,7 +2301,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Quake3/libs/ios",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.tomkiddconsulting.Quake3-iOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.rebelancap.Quake3-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Quake3-iOS/bridging.h";
 				SWIFT_VERSION = 5.0;

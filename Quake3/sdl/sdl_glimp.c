@@ -35,6 +35,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../sys/sys_local.h"
 #include "sdl_icon.h"
 
+#ifdef USE_IOS_GAMECONTROLLER
+#include "ios_gamecontroller_bridge.h"
+#endif
+
+#ifdef __APPLE__
+#include "TargetConditionals.h"
+#endif
+
 typedef enum
 {
 	RSERR_OK,
@@ -142,6 +150,29 @@ static int GLimp_CompareModes( const void *a, const void *b )
 		return areaA - areaB;
 }
 
+/*
+===============
+GLimp_FlushCommands
+
+Flush OpenGL commands when going to background
+Called from cl_main.c
+===============
+*/
+void GLimp_FlushCommands(void) {
+    if (SDL_glContext && SDL_window) {
+        Com_Printf("GLimp_FlushCommands: Flushing GPU commands for background\n");
+        
+        // Make sure we're using the right context
+        SDL_GL_MakeCurrent(SDL_window, SDL_glContext);
+        
+        // Flush all pending OpenGL commands
+        qglFlush();
+        // Or use qglFinish() for more thorough flushing:
+        // qglFinish();
+        
+        Com_Printf("GLimp_FlushCommands: GPU flush complete\n");
+    }
+}
 
 /*
 ===============
@@ -833,6 +864,21 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
     
 #ifdef IOS
     Sys_AddControls(SDL_window);
+    
+    // Hide controls if controller is connected
+    #if TARGET_OS_IOS || TARGET_OS_TV
+        extern int iOS_IsControllerConnected(void);
+        extern void Sys_HideControls(SDL_Window *sdlWindow);
+        
+        if (iOS_IsControllerConnected()) {
+            ri.Printf(PRINT_ALL, "Controller detected in GLimp_SetMode, hiding controls\n");
+            Sys_HideControls(SDL_window);
+        }
+    #endif
+    
+    #ifdef USE_IOS_GAMECONTROLLER
+    iOS_SetSDLWindow(SDL_window);
+    #endif
 #endif
 
 	GLimp_DetectAvailableModes();
@@ -1258,8 +1304,8 @@ void GLimp_EndFrame( void )
 		r_fullscreen->modified = qfalse;
 	}
     
-    #ifdef IOS
-        Sys_ToggleControls(SDL_window);
-    #endif
+#ifdef IOS
+    Sys_ToggleControls(SDL_window);
+#endif
     
 }

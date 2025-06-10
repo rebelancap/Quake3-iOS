@@ -31,6 +31,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "libmumblelink.h"
 #endif
 
+// Add background rendering pause support
+static qboolean rendering_paused = qfalse;
+
+// Forward declarations for notification handlers
+void CL_PauseRendering(void);
+void CL_ResumeRendering(void);
+
 #ifdef USE_MUMBLE
 cvar_t	*cl_useMumble;
 cvar_t	*cl_mumbleScale;
@@ -560,6 +567,34 @@ void CL_CaptureVoip(void)
 	}
 }
 #endif
+
+/*
+==================
+CL_PauseRendering
+
+Called when app goes to background
+==================
+*/
+void CL_PauseRendering(void) {
+    Com_Printf("CL_PauseRendering: Pausing rendering for background\n");
+    rendering_paused = qtrue;
+    
+    // This will be handled in sdl_glimp.c
+    extern void GLimp_FlushCommands(void);
+    GLimp_FlushCommands();
+}
+
+/*
+==================
+CL_ResumeRendering
+
+Called when app returns to foreground
+==================
+*/
+void CL_ResumeRendering(void) {
+    Com_Printf("CL_ResumeRendering: Resuming rendering\n");
+    rendering_paused = qfalse;
+}
 
 /*
 =======================================================================
@@ -3044,8 +3079,13 @@ void CL_Frame ( int msec ) {
 	// decide on the serverTime to render
 	CL_SetCGameTime();
 
-	// update the screen
-	SCR_UpdateScreen();
+    // update the screen (only if not paused)
+    if (!rendering_paused) {
+        SCR_UpdateScreen();
+    } else {
+        // Small delay to prevent busy waiting while paused
+        Sys_Sleep(16); // ~60 FPS equivalent pause
+    }
 
 	// update audio
 	S_Update();
@@ -3705,6 +3745,12 @@ void CL_Init( void ) {
 	CL_GenerateQKey();
 	Cvar_Get( "cl_guid", "", CVAR_USERINFO | CVAR_ROM );
 	CL_UpdateGUID( NULL, 0 );
+    
+#ifdef __APPLE__
+    // Set up background/foreground notifications for iOS
+    // Note: These will be set up via Objective-C bridge
+    Com_Printf("Setting up iOS background handling\n");
+#endif
 
 	Com_Printf( "----- Client Initialization Complete -----\n" );
 }

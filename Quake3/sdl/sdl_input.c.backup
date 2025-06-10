@@ -32,21 +32,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "../client/client.h"
 #include "../sys/sys_local.h"
-#include "../qcommon/qcommon.h"
-
-// iOS GameController support
-#ifdef __APPLE__
-#include "TargetConditionals.h"
-#if TARGET_OS_IOS || TARGET_OS_TV
-#include "ios_gamecontroller_bridge.h"
-#define USE_IOS_GAMECONTROLLER 1
-#endif
-#endif
-
-#ifdef USE_IOS_GAMECONTROLLER
-#include "ios_gamecontroller_bridge.h"
-void Sys_HideControls(SDL_Window *sdlWindow);  // Forward declaration
-#endif
 
 static cvar_t *in_keyboardDebug     = NULL;
 
@@ -64,64 +49,11 @@ static cvar_t *in_joystickThreshold = NULL;
 static cvar_t *in_joystickNo        = NULL;
 static cvar_t *in_joystickUseAnalog = NULL;
 
-#ifdef USE_IOS_GAMECONTROLLER
-// iOS GameController specific cvars
-static cvar_t *joy_deadzone         = NULL;
-static cvar_t *joy_sensitivity      = NULL;
-static cvar_t *joy_hapticStrength   = NULL;
-
-// Button mapping cvars
-static cvar_t *joy_buttonA_bind     = NULL;
-static cvar_t *joy_buttonB_bind     = NULL;
-static cvar_t *joy_buttonX_bind     = NULL;
-static cvar_t *joy_buttonY_bind     = NULL;
-static cvar_t *joy_leftShoulder_bind = NULL;
-static cvar_t *joy_rightShoulder_bind = NULL;
-static cvar_t *joy_leftTrigger_bind = NULL;
-static cvar_t *joy_rightTrigger_bind = NULL;
-static cvar_t *joy_dpadUp_bind      = NULL;
-static cvar_t *joy_dpadDown_bind    = NULL;
-static cvar_t *joy_dpadLeft_bind    = NULL;
-static cvar_t *joy_dpadRight_bind   = NULL;
-static cvar_t *joy_buttonMenu_bind  = NULL;
-static cvar_t *joy_buttonOptions_bind = NULL;
-static cvar_t *joy_leftThumbstickButton_bind = NULL;
-static cvar_t *joy_rightThumbstickButton_bind = NULL;
-
-// Axis sensitivity cvars
-static cvar_t *joy_leftStickSensitivity = NULL;
-static cvar_t *joy_rightStickSensitivity = NULL;
-
-// joystick mouse sensitivity
-static cvar_t *joy_menuMouseSpeed = NULL;
-
-// Previous button states for edge detection
-static struct {
-    int buttonA;
-    int buttonB;
-    int buttonX;
-    int buttonY;
-    int leftShoulder;
-    int rightShoulder;
-    int leftTrigger;
-    int rightTrigger;
-    int dpadUp;
-    int dpadDown;
-    int dpadLeft;
-    int dpadRight;
-    int buttonMenu;
-    int buttonOptions;
-    int leftThumbstickButton;
-    int rightThumbstickButton;
-} ios_controller_state;
-#endif
-
 static int vidRestartTime = 0;
 
 static int in_eventTime = 0;
 
-//static SDL_Window *SDL_window = NULL;
-extern SDL_Window *SDL_window; //
+static SDL_Window *SDL_window = NULL;
 
 #define CTRL(a) ((a)-'a'+1)
 
@@ -509,402 +441,6 @@ struct
 	unsigned int oldhats;
 } stick_state;
 
-#ifdef USE_IOS_GAMECONTROLLER
-/*
-===============
-IN_ApplyDeadzone
-===============
-*/
-static float IN_ApplyDeadzone(float value, float deadzone)
-{
-	if (fabs(value) < deadzone)
-		return 0.0f;
-	
-	// Scale from deadzone to 1.0
-	float sign = value < 0 ? -1.0f : 1.0f;
-	return sign * ((fabs(value) - deadzone) / (1.0f - deadzone));
-}
-
-/*
-===============
-IN_GetButtonBinding
-===============
-*/
-static keyNum_t IN_GetButtonBinding(cvar_t *bindCvar)
-{
-	if (!bindCvar || !bindCvar->string[0])
-		return 0;
-	
-	return Key_StringToKeynum(bindCvar->string);
-}
-
-/*
-===============
-IN_ProcessButtonBinding
-Handles both key bindings and direct command bindings
-===============
-*/
-static void IN_ProcessButtonBinding(cvar_t *bindCvar, qboolean pressed)
-{
-    if (!bindCvar || !bindCvar->string[0])
-        return;
-    
-    const char *binding = bindCvar->string;
-    
-    
-    // Check if this is a command (contains space, starts with +/-, or is a known command)
-    if (strchr(binding, ' ') || binding[0] == '+' || binding[0] == '-' ||
-        !Q_stricmp(binding, "weapnext") || !Q_stricmp(binding, "weapprev") ||
-        !Q_stricmp(binding, "centerview") || !Q_stricmp(binding, "togglemenu"))
-    {
-        // Handle +/- commands
-        if (binding[0] == '+')
-        {
-            char cmd[MAX_STRING_CHARS];
-            if (pressed)
-            {
-                Cbuf_AddText(binding);
-                Cbuf_AddText("\n");
-            }
-            else
-            {
-                // Convert +command to -command for release
-                Q_strncpyz(cmd, binding, sizeof(cmd));
-                cmd[0] = '-';
-                Cbuf_AddText(cmd);
-                Cbuf_AddText("\n");
-            }
-        }
-        else
-        {
-            // Regular command, only execute on press
-            if (pressed)
-            {
-                Cbuf_AddText(binding);
-                Cbuf_AddText("\n");
-            }
-        }
-    }
-    else
-    {
-        // It's a key binding
-        keyNum_t key = Key_StringToKeynum(binding);
-        if (key > 0)
-        {
-            Com_QueueEvent(in_eventTime, SE_KEY, key, pressed, 0, NULL);
-        }
-    }
-}
-
-/*
-===============
-IN_ToggleiOSKeyboard
-===============
-*/
-
-static void IN_ToggleiOSKeyboard(void)
-{
-    extern void Con_ToggleVirtualKeyboard(void);
-    Con_ToggleVirtualKeyboard();
-}
-
-/*
-===============
-IN_iOSGameControllerMove
-===============
-*/
-
-static void IN_iOSGameControllerMove(void)
-{
-    static qboolean keyboardComboActive = qfalse;
-    
-    extern qboolean Con_VirtualKeyboardActive(void);
-    extern void Con_VirtualKeyboardMove(int dx, int dy);
-    extern void Con_VirtualKeyboardSelect(void);
-    
-    if (!iOS_IsControllerConnected())
-        return;
-    
-    float deadzone = joy_deadzone->value;
-    float leftStickSens = joy_leftStickSensitivity->value;
-    float rightStickSens = joy_rightStickSensitivity->value;
-    
-    // Handle analog sticks
-    float leftX = IN_ApplyDeadzone(iOS_GetLeftStickX(), deadzone) * leftStickSens;
-    float leftY = IN_ApplyDeadzone(iOS_GetLeftStickY(), deadzone) * leftStickSens;
-    float rightX = IN_ApplyDeadzone(iOS_GetRightStickX(), deadzone) * rightStickSens;
-    float rightY = IN_ApplyDeadzone(iOS_GetRightStickY(), deadzone) * rightStickSens;
-    
-    // Send analog stick events
-    if (in_joystickUseAnalog->integer)
-    {
-        // Left stick for movement
-        Com_QueueEvent(in_eventTime, SE_JOYSTICK_AXIS, j_side_axis->integer, (int)(leftX * 10240), 0, NULL);
-        Com_QueueEvent(in_eventTime, SE_JOYSTICK_AXIS, j_forward_axis->integer, (int)(-leftY * 10240), 0, NULL);
-        
-        // Right stick for looking
-        Com_QueueEvent(in_eventTime, SE_JOYSTICK_AXIS, j_yaw_axis->integer, (int)(rightX * 10240), 0, NULL);
-        Com_QueueEvent(in_eventTime, SE_JOYSTICK_AXIS, j_pitch_axis->integer, (int)(-rightY * 10240), 0, NULL);
-    }
-    
-    // Check for L3 + R3 combo to toggle console AND virtual keyboard
-    if (iOS_GetLeftThumbstickButton() && iOS_GetRightThumbstickButton() && !keyboardComboActive) {
-        IN_ToggleiOSKeyboard();  // This will open console AND virtual keyboard
-        keyboardComboActive = qtrue;
-    } else if (!iOS_GetLeftThumbstickButton() || !iOS_GetRightThumbstickButton()) {
-        keyboardComboActive = qfalse;
-    }
-    
-    // Check if we're in game or menu
-    int keyCatcher = Key_GetCatcher();
-    qboolean inGame = !(keyCatcher & (KEYCATCH_UI | KEYCATCH_CONSOLE));
-    
-    // VIRTUAL KEYBOARD HANDLING HERE - BEFORE THE BUTTON STRUCTS
-    if (Con_VirtualKeyboardActive()) {
-        // Virtual keyboard navigation
-        static int prevDpadLeft = 0;
-        static int prevDpadRight = 0;
-        static int prevDpadUp = 0;
-        static int prevDpadDown = 0;
-        static int prevButtonA = 0;
-        
-        int currentDpadLeft = iOS_GetDpadLeft();
-        int currentDpadRight = iOS_GetDpadRight();
-        int currentDpadUp = iOS_GetDpadUp();
-        int currentDpadDown = iOS_GetDpadDown();
-        int currentButtonA = iOS_GetButtonA();
-        
-        // D-pad ONLY navigates keyboard, doesn't send console commands
-        if (currentDpadLeft && !prevDpadLeft) {
-            Con_VirtualKeyboardMove(-1, 0);
-        }
-        if (currentDpadRight && !prevDpadRight) {
-            Con_VirtualKeyboardMove(1, 0);
-        }
-        if (currentDpadUp && !prevDpadUp) {
-            Con_VirtualKeyboardMove(0, -1);
-        }
-        if (currentDpadDown && !prevDpadDown) {
-            Con_VirtualKeyboardMove(0, 1);
-        }
-        
-        // A button selects
-        if (currentButtonA && !prevButtonA) {
-            Con_VirtualKeyboardSelect();
-        }
-        
-        // Update previous states
-        prevDpadLeft = currentDpadLeft;
-        prevDpadRight = currentDpadRight;
-        prevDpadUp = currentDpadUp;
-        prevDpadDown = currentDpadDown;
-        prevButtonA = currentButtonA;
-        
-        // B button is backspace (make sure this is in the virtual keyboard section)
-        static int prevButtonB = 0;
-        int currentButtonB = iOS_GetButtonB();
-        if (currentButtonB && !prevButtonB) {
-            extern void Con_VirtualKeyboardBackspace(void);
-            Con_VirtualKeyboardBackspace();  // Make sure this is being called
-        }
-        prevButtonB = currentButtonB;
-        
-        return; // IMPORTANT: Don't process normal D-pad input while keyboard is active
-    }
-    
-    // Handle buttons with custom bindings
-    struct {
-        int (*getState)(void);
-        cvar_t *bindCvar;
-        int *prevState;
-        keyNum_t defaultKey;
-    } buttonMappings[] = {
-        { iOS_GetButtonA, joy_buttonA_bind, &ios_controller_state.buttonA, K_SPACE },
-        { iOS_GetButtonB, joy_buttonB_bind, &ios_controller_state.buttonB, K_ENTER },
-        { iOS_GetButtonX, joy_buttonX_bind, &ios_controller_state.buttonX, K_CTRL },
-        { iOS_GetButtonY, joy_buttonY_bind, &ios_controller_state.buttonY, K_HOME },
-        { iOS_GetLeftShoulder, joy_leftShoulder_bind, &ios_controller_state.leftShoulder, K_JOY5 },
-        { iOS_GetRightShoulder, joy_rightShoulder_bind, &ios_controller_state.rightShoulder, K_JOY6 },
-        { iOS_GetButtonMenu, joy_buttonMenu_bind, &ios_controller_state.buttonMenu, K_ESCAPE },
-        { iOS_GetButtonOptions, joy_buttonOptions_bind, &ios_controller_state.buttonOptions, K_TAB },
-        { iOS_GetLeftThumbstickButton, joy_leftThumbstickButton_bind, &ios_controller_state.leftThumbstickButton, K_SHIFT },
-        { iOS_GetRightThumbstickButton, joy_rightThumbstickButton_bind, &ios_controller_state.rightThumbstickButton, K_HOME }
-    };
-    
-    // D-pad handling
-    struct {
-        int (*getState)(void);
-        int *prevState;
-        keyNum_t gameKey;
-        keyNum_t menuKey;
-        cvar_t *bindCvar;
-    } dpadMappings[] = {
-        { iOS_GetDpadUp, &ios_controller_state.dpadUp, 0, K_UPARROW, joy_dpadUp_bind },
-        { iOS_GetDpadDown, &ios_controller_state.dpadDown, 0, K_DOWNARROW, joy_dpadDown_bind },
-        { iOS_GetDpadLeft, &ios_controller_state.dpadLeft, 0, K_LEFTARROW, joy_dpadLeft_bind },
-        { iOS_GetDpadRight, &ios_controller_state.dpadRight, 0, K_RIGHTARROW, joy_dpadRight_bind }
-    };
-    
-    int i;
-    for (i = 0; i < sizeof(buttonMappings) / sizeof(buttonMappings[0]); i++)
-    {
-        int currentState = buttonMappings[i].getState();
-        if (currentState != *buttonMappings[i].prevState)
-        {
-            // Normal button processing
-            if (buttonMappings[i].bindCvar && buttonMappings[i].bindCvar->string[0])
-            {
-                IN_ProcessButtonBinding(buttonMappings[i].bindCvar, currentState ? qtrue : qfalse);
-            }
-            else
-            {
-                Com_QueueEvent(in_eventTime, SE_KEY, buttonMappings[i].defaultKey,
-                              currentState ? qtrue : qfalse, 0, NULL);
-            }
-            *buttonMappings[i].prevState = currentState;
-        }
-    }
-    
-    // Handle D-pad with command support
-    for (i = 0; i < sizeof(dpadMappings) / sizeof(dpadMappings[0]); i++)
-    {
-        int currentState = dpadMappings[i].getState();
-        if (currentState != *dpadMappings[i].prevState)
-        {
-            keyNum_t key = 0;
-            qboolean useCommand = qfalse;
-            
-            if (inGame && dpadMappings[i].bindCvar && dpadMappings[i].bindCvar->string[0])
-            {
-                // In game, try command binding
-                IN_ProcessButtonBinding(dpadMappings[i].bindCvar, currentState ? qtrue : qfalse);
-                useCommand = qtrue;
-            }
-            else if (!inGame)
-            {
-                // In menu, use arrow keys
-                key = dpadMappings[i].menuKey;
-            }
-            
-            if (!useCommand && key)
-            {
-                Com_QueueEvent(in_eventTime, SE_KEY, key, currentState ? qtrue : qfalse, 0, NULL);
-            }
-            *dpadMappings[i].prevState = currentState;
-        }
-    }
-    
-    // Handle triggers with command support
-    float leftTriggerValue = iOS_GetLeftTrigger();
-    float rightTriggerValue = iOS_GetRightTrigger();
-    
-    // MOUSE SIMULATION FOR MENUS
-    if (!inGame) {  // Only in menus, not in game
-        static float mouseAccumX = 0.0f;
-        static float mouseAccumY = 0.0f;
-        
-        // Use left stick for mouse movement in menus
-        float mouseSensitivity = joy_menuMouseSpeed->value;
-        mouseAccumX += leftX * mouseSensitivity;
-        mouseAccumY += -leftY * mouseSensitivity;  // FLIP Y AXIS with negative
-        
-        // Send mouse events when we've accumulated enough movement
-        int deltaX = (int)mouseAccumX;
-        int deltaY = (int)mouseAccumY;
-        
-        if (deltaX != 0 || deltaY != 0) {
-            Com_QueueEvent(in_eventTime, SE_MOUSE, deltaX, deltaY, 0, NULL);
-            mouseAccumX -= deltaX;
-            mouseAccumY -= deltaY;
-        }
-        
-        // Right trigger acts as mouse click in menus
-        static int prevRightTriggerMouse = 0;
-        int rightTriggerMousePressed = rightTriggerValue > 0.5f;
-        
-        if (rightTriggerMousePressed != prevRightTriggerMouse) {
-            Com_QueueEvent(in_eventTime, SE_KEY, K_MOUSE1,
-                          rightTriggerMousePressed ? qtrue : qfalse, 0, NULL);
-            prevRightTriggerMouse = rightTriggerMousePressed;
-        }
-        
-        // A button as ENTER in menus
-        static int prevMenuButtonA = 0;
-        int currentMenuButtonA = iOS_GetButtonA();
-        if (currentMenuButtonA != prevMenuButtonA) {
-            Com_QueueEvent(in_eventTime, SE_KEY, K_ENTER,
-                          currentMenuButtonA ? qtrue : qfalse, 0, NULL);
-            prevMenuButtonA = currentMenuButtonA;
-        }
-        
-        // B button as ESCAPE in menus
-        static int prevMenuButtonB = 0;
-        int currentMenuButtonB = iOS_GetButtonB();
-        if (currentMenuButtonB != prevMenuButtonB) {
-            Com_QueueEvent(in_eventTime, SE_KEY, K_ESCAPE,
-                          currentMenuButtonB ? qtrue : qfalse, 0, NULL);
-            prevMenuButtonB = currentMenuButtonB;
-        }
-    }
-    
-    // Left trigger
-    int leftTriggerPressed = leftTriggerValue > 0.5f;
-    if (leftTriggerPressed != ios_controller_state.leftTrigger)
-    {
-        if (joy_leftTrigger_bind && joy_leftTrigger_bind->string[0])
-        {
-            IN_ProcessButtonBinding(joy_leftTrigger_bind, leftTriggerPressed ? qtrue : qfalse);
-        }
-        else
-        {
-            Com_QueueEvent(in_eventTime, SE_KEY, K_JOY7, leftTriggerPressed ? qtrue : qfalse, 0, NULL);
-        }
-        ios_controller_state.leftTrigger = leftTriggerPressed;
-    }
-    
-    // Right trigger
-    int rightTriggerPressed = rightTriggerValue > 0.5f;
-    if (rightTriggerPressed != ios_controller_state.rightTrigger)
-    {
-        if (joy_rightTrigger_bind && joy_rightTrigger_bind->string[0])
-        {
-            IN_ProcessButtonBinding(joy_rightTrigger_bind, rightTriggerPressed ? qtrue : qfalse);
-        }
-        else
-        {
-            Com_QueueEvent(in_eventTime, SE_KEY, K_MOUSE1, rightTriggerPressed ? qtrue : qfalse, 0, NULL);
-        }
-        ios_controller_state.rightTrigger = rightTriggerPressed;
-    }
-}
-
-/*
-===============
-IN_HapticEvent
-Trigger haptic feedback on iOS controllers that support it
-===============
-*/
-void IN_HapticEvent(float intensity, int duration)
-{
-#ifdef USE_IOS_GAMECONTROLLER
-    // Initialize iOS GameController FIRST, before any SDL initialization
-    Com_Printf("Initializing iOS GameController (bypassing SDL)...\n");
-    iOS_InitGameController();
-    Com_Printf("iOS GameController support initialized\n");
-	
-	// Scale intensity by user preference
-	intensity *= joy_hapticStrength->value;
-	
-	// Clamp intensity
-	if (intensity > 1.0f) intensity = 1.0f;
-	if (intensity < 0.0f) intensity = 0.0f;
-	
-	// This would call into the iOS GameController haptic API
-	// The actual implementation would be in the Objective-C bridge
-	iOS_TriggerHaptic(intensity, duration);
-#endif
-}
-#endif // USE_IOS_GAMECONTROLLER
 
 /*
 ===============
@@ -916,71 +452,6 @@ static void IN_InitJoystick( void )
 	int i = 0;
 	int total = 0;
 	char buf[16384] = "";
-
-#ifdef USE_IOS_GAMECONTROLLER
-    // Initialize iOS GameController FIRST, before any SDL initialization
-    Com_Printf("Initializing iOS GameController (bypassing SDL)...\n");
-    iOS_InitGameController();
-    Com_Printf("iOS GameController support initialized\n");
-    
-    // Force analog mode for iOS controllers
-    in_joystickUseAnalog = Cvar_Get( "in_joystickUseAnalog", "1", CVAR_ARCHIVE );
-    Cvar_Set( "in_joystickUseAnalog", "1" );
-	
-    // Initialize button mapping cvars with direct commands
-    joy_deadzone = Cvar_Get("joy_deadzone", "0.15", CVAR_ARCHIVE);
-    joy_sensitivity = Cvar_Get("joy_sensitivity", "1.0", CVAR_ARCHIVE);
-    joy_hapticStrength = Cvar_Get("joy_hapticStrength", "1.0", CVAR_ARCHIVE);
-    joy_menuMouseSpeed = Cvar_Get("joy_menuMouseSpeed", "20.0", CVAR_ARCHIVE);
-
-    // Sensitivity adjustments
-    joy_leftStickSensitivity = Cvar_Get("joy_leftStickSensitivity", "1.0", CVAR_ARCHIVE);
-    joy_rightStickSensitivity = Cvar_Get("joy_rightStickSensitivity", "5.0", CVAR_ARCHIVE);
-
-    // Button bindings with direct commands
-    joy_buttonA_bind = Cvar_Get("joy_buttonA_bind", "+moveup", CVAR_ARCHIVE);  // Jump
-    joy_buttonB_bind = Cvar_Get("joy_buttonB_bind", "+button2", CVAR_ARCHIVE);  // Use Item
-    joy_buttonX_bind = Cvar_Get("joy_buttonX_bind", "+movedown", CVAR_ARCHIVE);  // Crouch
-    joy_buttonY_bind = Cvar_Get("joy_buttonY_bind", "+gesture", CVAR_ARCHIVE);  // Make Gesture
-    joy_leftShoulder_bind = Cvar_Get("joy_leftShoulder_bind", "+moveup", CVAR_ARCHIVE);  // Jump
-    joy_rightShoulder_bind = Cvar_Get("joy_rightShoulder_bind", "weapnext", CVAR_ARCHIVE);  // Next weapon
-    joy_leftTrigger_bind = Cvar_Get("joy_leftTrigger_bind", "+zoom", CVAR_ARCHIVE);  // Zoom
-    joy_rightTrigger_bind = Cvar_Get("joy_rightTrigger_bind", "+attack", CVAR_ARCHIVE);  // Fire
-    joy_dpadUp_bind = Cvar_Get("joy_dpadUp_bind", "", CVAR_ARCHIVE);  // Empty
-    joy_dpadDown_bind = Cvar_Get("joy_dpadDown_bind", "drop", CVAR_ARCHIVE);  // drop
-    joy_dpadLeft_bind = Cvar_Get("joy_dpadLeft_bind", "weapprev", CVAR_ARCHIVE);  // Previous weapon
-    joy_dpadRight_bind = Cvar_Get("joy_dpadRight_bind", "weapnext", CVAR_ARCHIVE);  // Next weapon
-    joy_buttonMenu_bind = Cvar_Get("joy_buttonMenu_bind", "togglemenu", CVAR_ARCHIVE);  // Menu toggle
-    joy_buttonOptions_bind = Cvar_Get("joy_buttonOptions_bind", "+scores", CVAR_ARCHIVE);  // Show scores
-    joy_leftThumbstickButton_bind = Cvar_Get("joy_leftThumbstickButton_bind", "+speed", CVAR_ARCHIVE);  // Hold for walk
-    joy_rightThumbstickButton_bind = Cvar_Get("joy_rightThumbstickButton_bind", "centerview", CVAR_ARCHIVE);  // Center view
-	
-    // Force always run by default
-    Cvar_Set("cl_run", "1");
-	
-	// Set up proper joystick axis mappings for analog movement
-	// These cvars control which axis number is used for each movement direction
-    Cvar_Get("j_forward_axis", "1", CVAR_ARCHIVE);    // Left stick Y axis
-    Cvar_Get("j_side_axis", "0", CVAR_ARCHIVE);       // Left stick X axis
-    Cvar_Get("j_pitch_axis", "3", CVAR_ARCHIVE);      // Right stick Y axis
-    Cvar_Get("j_yaw_axis", "2", CVAR_ARCHIVE);        // Right stick X axis
-    Cvar_Get("j_up_axis", "4", CVAR_ARCHIVE);         // Not typically used
-
-    // Set axis sensitivities - reduce these back down since we're using 10240
-    Cvar_Get("j_forward", "-25", CVAR_ARCHIVE);       // Movement forward/back
-    Cvar_Get("j_side", "25", CVAR_ARCHIVE);           // Movement strafe
-    Cvar_Get("j_pitch", "0.004", CVAR_ARCHIVE);      // Much lower since we're using 10240
-    Cvar_Get("j_yaw", "-0.004", CVAR_ARCHIVE);       // Much lower since we're using 10240
-    
-    // joystick mouse sensitivity
-    joy_menuMouseSpeed = Cvar_Get("joy_menuMouseSpeed", "20.0", CVAR_ARCHIVE);
-	
-	// Clear controller state
-	memset(&ios_controller_state, 0, sizeof(ios_controller_state));
-    	
-	// Don't initialize SDL joystick system on iOS
-	return;
-#endif
 
 	if (gamepad)
 		SDL_GameControllerClose(gamepad);
@@ -1072,7 +543,6 @@ IN_ShutdownJoystick
 */
 static void IN_ShutdownJoystick( void )
 {
-#ifndef USE_IOS_GAMECONTROLLER
 	if ( !SDL_WasInit( SDL_INIT_GAMECONTROLLER ) )
 		return;
 
@@ -1093,7 +563,6 @@ static void IN_ShutdownJoystick( void )
 
 	SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
 	SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-#endif
 }
 
 
@@ -1301,11 +770,6 @@ IN_JoyMove
 */
 static void IN_JoyMove( void )
 {
-#ifdef USE_IOS_GAMECONTROLLER
-	IN_iOSGameControllerMove();
-	return;
-#endif
-
 	unsigned int axes = 0;
 	unsigned int hats = 0;
 	int total = 0;
@@ -1519,7 +983,6 @@ static void IN_ProcessEvents( void )
 	SDL_Event e;
 	keyNum_t key = 0;
 	static keyNum_t lastKeyDown = 0;
-    static Uint32 consoleOpenTime = 0;
 
 	if( !SDL_WasInit( SDL_INIT_VIDEO ) )
 			return;
@@ -1528,35 +991,20 @@ static void IN_ProcessEvents( void )
 	{
 		switch( e.type )
 		{
-            case SDL_KEYDOWN:
-                if ( e.key.repeat && Key_GetCatcher( ) == 0 )
-                    break;
+			case SDL_KEYDOWN:
+				if ( e.key.repeat && Key_GetCatcher( ) == 0 )
+					break;
 
-                if( ( key = IN_TranslateSDLToQ3Key( &e.key.keysym, qtrue ) ) )
-                {
-                    // Check if this is the console key
-                    if( key == K_CONSOLE )
-                    {
-                        consoleOpenTime = SDL_GetTicks();  // Record when console was opened
-                    }
-                    
-                    Com_QueueEvent( in_eventTime, SE_KEY, key, qtrue, 0, NULL );
-                }
+				if( ( key = IN_TranslateSDLToQ3Key( &e.key.keysym, qtrue ) ) )
+					Com_QueueEvent( in_eventTime, SE_KEY, key, qtrue, 0, NULL );
 
-                // Special handling for console input
-                if( Key_GetCatcher() & KEYCATCH_CONSOLE ) {
-                    // Don't send modifier keys as characters
-                    if( key == K_SHIFT || key == K_CTRL || key == K_ALT )
-                        break;
-                        
-                    if( key == K_BACKSPACE )
-                        Com_QueueEvent( in_eventTime, SE_CHAR, CTRL('h'), 0, 0, NULL );
-                    else if( keys[K_CTRL].down && key >= 'a' && key <= 'z' )
-                        Com_QueueEvent( in_eventTime, SE_CHAR, CTRL(key), 0, 0, NULL );
-                }
+				if( key == K_BACKSPACE )
+					Com_QueueEvent( in_eventTime, SE_CHAR, CTRL('h'), 0, 0, NULL );
+				else if( keys[K_CTRL].down && key >= 'a' && key <= 'z' )
+					Com_QueueEvent( in_eventTime, SE_CHAR, CTRL(key), 0, 0, NULL );
 
-                lastKeyDown = key;
-                break;
+				lastKeyDown = key;
+				break;
 
 			case SDL_KEYUP:
 				if( ( key = IN_TranslateSDLToQ3Key( &e.key.keysym, qfalse ) ) )
@@ -1565,58 +1013,55 @@ static void IN_ProcessEvents( void )
 				lastKeyDown = 0;
 				break;
 
-            case SDL_TEXTINPUT:
-                // Don't process text input if it's the console key
-                if( e.text.text[0] == '`' || e.text.text[0] == '~' ) {
-                    // Check if we just opened the console (within 100ms)
-                    if( SDL_GetTicks() - consoleOpenTime < 100 ) {
-                        break;  // Ignore this character
-                    }
-                }
-                
-                // Process all other text input
-                {
-                    char *c = e.text.text;
-                    
-                    // Quick and dirty UTF-8 to UTF-32 conversion
-                    while( *c )
-                    {
-                        int utf32 = 0;
-                        
-                        if( ( *c & 0x80 ) == 0 )
-                            utf32 = *c++;
-                        else if( ( *c & 0xE0 ) == 0xC0 ) // 110x xxxx
-                        {
-                            utf32 |= ( *c++ & 0x1F ) << 6;
-                            utf32 |= ( *c++ & 0x3F );
-                        }
-                        else if( ( *c & 0xF0 ) == 0xE0 ) // 1110 xxxx
-                        {
-                            utf32 |= ( *c++ & 0x0F ) << 12;
-                            utf32 |= ( *c++ & 0x3F ) << 6;
-                            utf32 |= ( *c++ & 0x3F );
-                        }
-                        else if( ( *c & 0xF8 ) == 0xF0 ) // 1111 0xxx
-                        {
-                            utf32 |= ( *c++ & 0x07 ) << 18;
-                            utf32 |= ( *c++ & 0x3F ) << 12;
-                            utf32 |= ( *c++ & 0x3F ) << 6;
-                            utf32 |= ( *c++ & 0x3F );
-                        }
-                        else
-                        {
-                            Com_DPrintf( "Unrecognised UTF-8 lead byte: 0x%x\n", (unsigned int)*c );
-                            c++;
-                        }
-                        
-                        if( utf32 != 0 )
-                        {
-                            // Send the character - SDL has already handled shift
-                            Com_QueueEvent( in_eventTime, SE_CHAR, utf32, 0, 0, NULL );
-                        }
-                    }
-                }
-                break;
+			case SDL_TEXTINPUT:
+				if( lastKeyDown != K_CONSOLE )
+				{
+					char *c = e.text.text;
+
+					// Quick and dirty UTF-8 to UTF-32 conversion
+					while( *c )
+					{
+						int utf32 = 0;
+
+						if( ( *c & 0x80 ) == 0 )
+							utf32 = *c++;
+						else if( ( *c & 0xE0 ) == 0xC0 ) // 110x xxxx
+						{
+							utf32 |= ( *c++ & 0x1F ) << 6;
+							utf32 |= ( *c++ & 0x3F );
+						}
+						else if( ( *c & 0xF0 ) == 0xE0 ) // 1110 xxxx
+						{
+							utf32 |= ( *c++ & 0x0F ) << 12;
+							utf32 |= ( *c++ & 0x3F ) << 6;
+							utf32 |= ( *c++ & 0x3F );
+						}
+						else if( ( *c & 0xF8 ) == 0xF0 ) // 1111 0xxx
+						{
+							utf32 |= ( *c++ & 0x07 ) << 18;
+							utf32 |= ( *c++ & 0x3F ) << 12;
+							utf32 |= ( *c++ & 0x3F ) << 6;
+							utf32 |= ( *c++ & 0x3F );
+						}
+						else
+						{
+							Com_DPrintf( "Unrecognised UTF-8 lead byte: 0x%x\n", (unsigned int)*c );
+							c++;
+						}
+
+						if( utf32 != 0 )
+						{
+							if( IN_IsConsoleKey( 0, utf32 ) )
+							{
+								Com_QueueEvent( in_eventTime, SE_KEY, K_CONSOLE, qtrue, 0, NULL );
+								Com_QueueEvent( in_eventTime, SE_KEY, K_CONSOLE, qfalse, 0, NULL );
+							}
+							else
+								Com_QueueEvent( in_eventTime, SE_CHAR, utf32, 0, 0, NULL );
+						}
+          }
+        }
+				break;
 
 			case SDL_MOUSEMOTION:
 				if( mouseActive )
@@ -1660,10 +1105,8 @@ static void IN_ProcessEvents( void )
 
 			case SDL_CONTROLLERDEVICEADDED:
 			case SDL_CONTROLLERDEVICEREMOVED:
-#ifndef USE_IOS_GAMECONTROLLER
 				if (in_joystick->integer)
 					IN_InitJoystick();
-#endif
 				break;
 
 			case SDL_QUIT:
@@ -1712,21 +1155,6 @@ static void IN_ProcessEvents( void )
 				break;
                 
                 case SDL_FINGERDOWN:
-                // Add virtual keyboard touch handling
-                extern qboolean Con_VirtualKeyboardActive(void);
-                extern void Con_VirtualKeyboardTouch(float x, float y, float consoleHeight);
-                
-                if (Con_VirtualKeyboardActive()) {
-//                    extern float con_displayFrac;  // Try this first
-                    float consoleHeight = cls.glconfig.vidHeight * 0.5f;
-                    
-                    // Convert normalized coordinates to screen coordinates
-                    float touchX = e.tfinger.x * cls.glconfig.vidWidth;
-                    float touchY = e.tfinger.y * cls.glconfig.vidHeight;
-                    
-                    Con_VirtualKeyboardTouch(touchX, touchY, consoleHeight);
-                    break;
-                }
                 case SDL_FINGERUP:
                     if (Key_GetCatcher( ) & KEYCATCH_UI) {
                         
@@ -1765,22 +1193,8 @@ IN_Frame
 void IN_Frame( void )
 {
 	qboolean loading;
-    
-    // Ensure text input is enabled when console is active
-    static qboolean wasConsoleActive = qfalse;
-    qboolean isConsoleActive = (Key_GetCatcher() & KEYCATCH_CONSOLE) != 0;
-    
-    if (isConsoleActive && !wasConsoleActive) {
-        SDL_StartTextInput();
-    } else if (!isConsoleActive && wasConsoleActive) {
-        // Don't disable text input on iOS - we might need it
-        #ifndef IOS
-        SDL_StopTextInput();
-        #endif
-    }
-    wasConsoleActive = isConsoleActive;
-    
-    IN_JoyMove( );
+
+	IN_JoyMove( );
 
 	// If not DISCONNECTED (main menu) or ACTIVE (in game), we're loading
 	loading = ( clc.state != CA_DISCONNECTED && clc.state != CA_ACTIVE );
@@ -1838,41 +1252,13 @@ void IN_Init( void *windowData )
 
 	Com_DPrintf( "\n------- Input Initialization -------\n" );
 
-#ifdef IOS
-	// CRITICAL: Disable SDL's joystick/gamecontroller subsystem entirely on iOS
-	// This MUST happen before any other SDL calls
-	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
-	SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
-	SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "1");
-	SDL_SetHint(SDL_HINT_GAMECONTROLLERCONFIG, "");
-	SDL_SetHint("SDL_JOYSTICK_DISABLED", "1");
-	
-	// Quit any already initialized joystick subsystems
-	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER)) {
-		SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
-		Com_DPrintf("iOS: Quit SDL gamecontroller subsystem\n");
-	}
-	if (SDL_WasInit(SDL_INIT_JOYSTICK)) {
-		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-		Com_DPrintf("iOS: Quit SDL joystick subsystem\n");
-	}
-	
-	Com_DPrintf( "iOS: Disabled SDL controller hints and subsystems\n" );
-#endif
-
 	in_keyboardDebug = Cvar_Get( "in_keyboardDebug", "0", CVAR_ARCHIVE );
 
 	// mouse variables
 	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
 	in_nograb = Cvar_Get( "in_nograb", "0", CVAR_ARCHIVE );
 
-#ifdef USE_IOS_GAMECONTROLLER
-	// Force joystick to be enabled on iOS
-	in_joystick = Cvar_Get( "in_joystick", "1", CVAR_ARCHIVE|CVAR_LATCH );
-	Cvar_Set( "in_joystick", "1" );
-#else
 	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE|CVAR_LATCH );
-#endif
 	in_joystickThreshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE );
 
 #ifndef IOS
@@ -1880,7 +1266,6 @@ void IN_Init( void *windowData )
 #else
     SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
-    //    SDL_StartTextInput();  // Enable text input on iOS too! - not working
 #endif
 
 	mouseAvailable = ( in_mouse->value != 0 );

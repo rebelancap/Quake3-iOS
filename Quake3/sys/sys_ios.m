@@ -9,6 +9,11 @@
 #import <Foundation/Foundation.h>
 #include "sys_local.h"
 #include "qcommon.h"
+#include "sys_ios.h"  // Add this line
+
+#ifdef USE_IOS_GAMECONTROLLER
+#include "ios_gamecontroller_bridge.h"
+#endif
 
 #if TARGET_OS_TV
 #import "Quake3_tvOS-Swift.h"
@@ -66,9 +71,15 @@ UIViewController* GetSDLViewController(SDL_Window *sdlWindow) {
 
 void Sys_AddControls(SDL_Window *sdlWindow) {
     #if !TARGET_OS_TV
+        #ifdef USE_IOS_GAMECONTROLLER
+        // Don't add controls if a controller is connected
+        if (iOS_IsControllerConnected()) {
+            return;
+        }
+        #endif
+        
         // adding on-screen controls -tkidd
         SDL_uikitviewcontroller *rootVC = (SDL_uikitviewcontroller *)GetSDLViewController(sdlWindow);
-        NSLog(@"root VC = %@",rootVC);
 
         [rootVC.view addSubview:[rootVC fireButtonWithRect:[rootVC.view frame]]];
         [rootVC.view addSubview:[rootVC jumpButtonWithRect:[rootVC.view frame]]];
@@ -82,11 +93,75 @@ void Sys_AddControls(SDL_Window *sdlWindow) {
 
 void Sys_ToggleControls(SDL_Window *sdlWindow) {
     #if !TARGET_OS_TV
-    SDL_uikitviewcontroller *rootVC = (SDL_uikitviewcontroller *)GetSDLViewController(sdlWindow);
-    [rootVC toggleControls:Key_GetCatcher( ) & KEYCATCH_UI];
+        #ifdef USE_IOS_GAMECONTROLLER
+        // Don't show controls if a controller is connected
+        if (iOS_IsControllerConnected()) {
+            return;
+        }
+        #endif
+        
+        SDL_uikitviewcontroller *rootVC = (SDL_uikitviewcontroller *)GetSDLViewController(sdlWindow);
+        [rootVC toggleControls:Key_GetCatcher( ) & KEYCATCH_UI];
     #endif
 }
 
+void Sys_HideControls(SDL_Window *sdlWindow) {
+    #if !TARGET_OS_TV
+        SDL_uikitviewcontroller *rootVC = (SDL_uikitviewcontroller *)GetSDLViewController(sdlWindow);
+        if (!rootVC) return;
+        
+        // Hide all control subviews
+        for (UIView *subview in [rootVC.view.subviews copy]) {
+            if ([subview isKindOfClass:[JoyStickView class]] || 
+                [subview isKindOfClass:[UIButton class]]) {
+                subview.hidden = YES;
+                [subview removeFromSuperview];
+            }
+        }
+    #endif
+}
+
+void Sys_ShowControls(SDL_Window *sdlWindow) {
+    #if !TARGET_OS_TV
+        #ifdef USE_IOS_GAMECONTROLLER
+        // Don't show if controller is connected
+        if (iOS_IsControllerConnected()) {
+            NSLog(@"Sys_ShowControls: Controller connected, not showing controls");
+            return;
+        }
+        #endif
+        
+        NSLog(@"Sys_ShowControls called");
+        SDL_uikitviewcontroller *rootVC = (SDL_uikitviewcontroller *)GetSDLViewController(sdlWindow);
+        if (!rootVC) {
+            NSLog(@"Sys_ShowControls: rootVC is NULL");
+            return;
+        }
+        
+        // Re-add controls
+        dispatch_async(dispatch_get_main_queue(), ^{
+            // Remove any existing controls first
+            for (UIView *subview in [rootVC.view.subviews copy]) {
+                if ([subview isKindOfClass:[JoyStickView class]] || 
+                    [subview isKindOfClass:[UIButton class]]) {
+                    [subview removeFromSuperview];
+                }
+            }
+            
+            // Add controls back
+            [rootVC.view addSubview:[rootVC fireButtonWithRect:[rootVC.view frame]]];
+            [rootVC.view addSubview:[rootVC jumpButtonWithRect:[rootVC.view frame]]];
+            [rootVC.view addSubview:[rootVC joyStickWithRect:[rootVC.view frame]]];
+            [rootVC.view addSubview:[rootVC buttonStackWithRect:[rootVC.view frame]]];
+            [rootVC.view addSubview:[rootVC f1ButtonWithRect:[rootVC.view frame]]];
+            [rootVC.view addSubview:[rootVC prevWeaponButtonWithRect:[rootVC.view frame]]];
+            [rootVC.view addSubview:[rootVC nextWeaponButtonWithRect:[rootVC.view frame]]];
+            
+            [rootVC.view setNeedsLayout];
+            [rootVC.view layoutIfNeeded];
+        });
+    #endif
+}
 
 void GLimp_SetGamma( unsigned char red[256], unsigned char green[256], unsigned char blue[256] )
 {
