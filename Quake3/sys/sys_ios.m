@@ -100,6 +100,7 @@ void Sys_AddControls(SDL_Window *sdlWindow) {
         [rootVC.view addSubview:[rootVC f1ButtonWithRect:[rootVC.view frame]]];
         [rootVC.view addSubview:[rootVC prevWeaponButtonWithRect:[rootVC.view frame]]];
         [rootVC.view addSubview:[rootVC nextWeaponButtonWithRect:[rootVC.view frame]]];
+        [rootVC.view addSubview:[rootVC quitButtonWithRect:[rootVC.view frame]]];
     #endif
 }
 
@@ -178,6 +179,7 @@ void Sys_ShowControls(SDL_Window *sdlWindow) {
             [rootVC.view addSubview:[rootVC f1ButtonWithRect:[rootVC.view frame]]];
             [rootVC.view addSubview:[rootVC prevWeaponButtonWithRect:[rootVC.view frame]]];
             [rootVC.view addSubview:[rootVC nextWeaponButtonWithRect:[rootVC.view frame]]];
+            [rootVC.view addSubview:[rootVC quitButtonWithRect:[rootVC.view frame]]];
             
             [rootVC.view setNeedsLayout];
             [rootVC.view layoutIfNeeded];

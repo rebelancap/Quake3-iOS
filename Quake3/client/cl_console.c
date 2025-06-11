@@ -30,6 +30,9 @@ extern void Con_GetVirtualKeyboardInfo(int *cursorX, int *cursorY, const char **
 
 // Forward declaration
 void Con_DrawVirtualKeyboard(void);
+void Con_DrawTouchNavigation(void);
+static void Con_DrawBigESC(int startX, int startY, vec4_t color);
+static void Con_DrawBigTAB(int startX, int startY, vec4_t color);
 
 int g_console_field_width = 78;
 
@@ -70,6 +73,13 @@ cvar_t      *con_margin;  // Horizontal margin for console (in pixels)
 
 // Function prototypes
 int Con_GetDefaultMargin(void);
+
+// Touch navigation animation state
+static float touchNavAlpha = 0.0f;           // Current opacity (0.0 to 1.0)
+static int touchNavStartTime = 0;            // When fade started
+static qboolean touchNavVisible = qfalse;   // Whether arrows should be visible
+static int touchNavDuration = 1000;         // How long to show arrows (1 second)
+
 
 #define	DEFAULT_CONSOLE_WIDTH	78
 
@@ -924,6 +934,7 @@ void Con_DrawConsole( void ) {
 		}
 	}
     Con_DrawVirtualKeyboard();
+    Con_DrawTouchNavigation();
 }
 
 //================================================================
@@ -1178,4 +1189,279 @@ int Con_GetDefaultMargin(void) {
     }
     
     return 0;  // No margin by default
+}
+/*
+==================
+Con_TouchNavigation_SetVisible
+Call this when user touches anywhere to reveal the arrows
+==================
+*/
+void Con_TouchNavigation_SetVisible(void) {
+    // Only show if we're in UI mode and NOT in console
+    if ((Key_GetCatcher() & KEYCATCH_UI) && !(Key_GetCatcher() & KEYCATCH_CONSOLE)) {
+        touchNavVisible = qtrue;
+        touchNavStartTime = cls.realtime;
+        // Don't reset alpha - let it fade in smoothly from current value
+    }
+}
+
+/*
+==================
+Con_UpdateTouchNavigationAlpha
+Updates the fade animation
+==================
+*/
+static void Con_UpdateTouchNavigationAlpha(void) {
+    if (!touchNavVisible) {
+        // Fade out quickly if not supposed to be visible
+        touchNavAlpha -= cls.realFrametime * 0.003f;  // Fast fade out
+        if (touchNavAlpha <= 0.0f) {
+            touchNavAlpha = 0.0f;
+        }
+        return;
+    }
+    
+    int currentTime = cls.realtime;
+    int elapsed = currentTime - touchNavStartTime;
+    
+    if (elapsed < 200) {
+        // Fade in phase (first 200ms)
+        float fadeInProgress = (float)elapsed / 200.0f;
+        touchNavAlpha = fadeInProgress * 0.4f;  // Max alpha of 40%
+    }
+    else if (elapsed < touchNavDuration - 200) {
+        // Fully visible phase
+        touchNavAlpha = 0.4f;
+    }
+    else if (elapsed < touchNavDuration) {
+        // Fade out phase (last 200ms)
+        float fadeOutProgress = (float)(touchNavDuration - elapsed) / 200.0f;
+        touchNavAlpha = fadeOutProgress * 0.4f;
+    }
+    else {
+        // Animation complete
+        touchNavAlpha = 0.0f;
+        touchNavVisible = qfalse;
+    }
+}
+
+/*
+==================
+Con_DrawArrow
+Draws a proper triangular arrow with correct directions and bigger size
+==================
+*/
+static void Con_DrawArrow(int centerX, int centerY, int direction, vec4_t color) {
+    int arrowSize = 60;  // Doubled size (was 30, now 60)
+    int thickness = 8;   // Doubled thickness (was 4, now 8)
+    
+    re.SetColor(color);
+    
+    switch (direction) {
+        case 0: // UP arrow - triangle pointing up (FIXED)
+            {
+                // Draw triangle pointing up using horizontal lines of increasing width from top to bottom
+                for (int i = 0; i < arrowSize; i += thickness) {
+                    int lineWidth = (i + thickness) * 2;  // FIXED: Start narrow at top, get wider
+                    int lineX = centerX - lineWidth/2;
+                    int lineY = centerY - arrowSize/2 + i;
+                    re.DrawStretchPic(lineX, lineY, lineWidth, thickness, 0, 0, 1, 1, cls.whiteShader);
+                }
+            }
+            break;
+            
+        case 1: // DOWN arrow - triangle pointing down (FIXED)
+            {
+                // Draw triangle pointing down using horizontal lines of decreasing width from top to bottom
+                for (int i = 0; i < arrowSize; i += thickness) {
+                    int lineWidth = (arrowSize - i) * 2;  // FIXED: Start wide at top, get narrower
+                    int lineX = centerX - lineWidth/2;
+                    int lineY = centerY - arrowSize/2 + i;
+                    re.DrawStretchPic(lineX, lineY, lineWidth, thickness, 0, 0, 1, 1, cls.whiteShader);
+                }
+            }
+            break;
+            
+        case 2: // LEFT arrow - triangle pointing left (FIXED)
+            {
+                // Draw triangle pointing left using vertical lines of increasing height from left to right
+                for (int i = 0; i < arrowSize; i += thickness) {
+                    int lineHeight = (i + thickness) * 2;  // FIXED: Start narrow at left, get taller
+                    int lineX = centerX - arrowSize/2 + i;
+                    int lineY = centerY - lineHeight/2;
+                    re.DrawStretchPic(lineX, lineY, thickness, lineHeight, 0, 0, 1, 1, cls.whiteShader);
+                }
+            }
+            break;
+            
+        case 3: // RIGHT arrow - triangle pointing right (FIXED)
+            {
+                // Draw triangle pointing right using vertical lines of decreasing height from left to right
+                for (int i = 0; i < arrowSize; i += thickness) {
+                    int lineHeight = (arrowSize - i) * 2;  // FIXED: Start tall at left, get narrower
+                    int lineX = centerX - arrowSize/2 + i;
+                    int lineY = centerY - lineHeight/2;
+                    re.DrawStretchPic(lineX, lineY, thickness, lineHeight, 0, 0, 1, 1, cls.whiteShader);
+                }
+            }
+            break;
+    }
+}
+
+/*
+==================
+Con_DrawBullet
+Draws a bigger filled circle
+==================
+*/
+static void Con_DrawBullet(int centerX, int centerY, int radius, vec4_t color) {
+    re.SetColor(color);
+    
+    // Draw a filled circle using multiple small rectangles
+    int pixelSize = 6;  // Doubled pixel size (was 3, now 6)
+    
+    for (int y = -radius; y <= radius; y += pixelSize) {
+        for (int x = -radius; x <= radius; x += pixelSize) {
+            // Check if this pixel is inside the circle
+            if (x*x + y*y <= radius*radius) {
+                re.DrawStretchPic(centerX + x, centerY + y, pixelSize, pixelSize, 0, 0, 1, 1, cls.whiteShader);
+            }
+        }
+    }
+}
+
+/*
+==================
+Con_DrawTouchNavigation
+Updated to use the bigger ESC drawing
+==================
+*/
+void Con_DrawTouchNavigation(void) {
+    // Update animation
+    Con_UpdateTouchNavigationAlpha();
+    
+    // Don't draw if alpha is 0 or if console is active
+    if (touchNavAlpha <= 0.0f || (Key_GetCatcher() & KEYCATCH_CONSOLE)) {
+        return;
+    }
+    
+    // Don't show if not in UI mode
+    if (!(Key_GetCatcher() & KEYCATCH_UI)) {
+        return;
+    }
+    
+    int screenWidth = cls.glconfig.vidWidth;
+    int screenHeight = cls.glconfig.vidHeight;
+    
+    // Calculate center positions
+    int centerX = screenWidth / 2;
+    int centerY = screenHeight / 2;
+    int arrowDistance = 300;
+    
+    // Set color with current animation alpha
+    vec4_t arrowColor = {1.0f, 1.0f, 1.0f, touchNavAlpha};
+    vec4_t centerColor = {0.8f, 0.8f, 1.0f, touchNavAlpha * 0.8f};
+    
+    // Draw custom arrows
+    Con_DrawArrow(centerX, centerY - arrowDistance, 0, arrowColor);        // UP
+    Con_DrawArrow(centerX, centerY + arrowDistance, 1, arrowColor);        // DOWN
+    Con_DrawArrow(centerX - arrowDistance, centerY, 2, arrowColor);        // LEFT
+    Con_DrawArrow(centerX + arrowDistance, centerY, 3, arrowColor);        // RIGHT
+    
+    // Draw filled bullet for center
+    Con_DrawBullet(centerX, centerY, 50, centerColor);
+    
+    // Draw much bigger ESC using the new method
+    Con_DrawBigESC(80, 80, arrowColor);  // Positioned further from corner
+    Con_DrawBigTAB(80, 330, arrowColor);  // Same X as ESC, but 200 pixels down
+    
+    re.SetColor(NULL);
+}
+
+/*
+==================
+Con_DrawBigESC
+Draws ESC text much bigger by drawing each character multiple times with offsets
+==================
+*/
+static void Con_DrawBigESC(int startX, int startY, vec4_t color) {
+    re.SetColor(color);
+    
+    // Use a reasonable scale that definitely works
+    float oldScale = con_scale ? con_scale->value : 1.0f;
+    if (con_scale) con_scale->value = 6.0f;  // Try a more conservative scale first
+    
+    int charW = Con_GetScaledCharWidth();
+    int charH = Con_GetScaledCharHeight();
+    
+    // Draw each letter multiple times with slight offsets to make them thicker/bolder
+    int thickness = 3;  // How many pixels to offset for thickness
+    
+    // Draw 'E' with thickness
+    for (int dx = 0; dx < thickness; dx++) {
+        for (int dy = 0; dy < thickness; dy++) {
+            Con_DrawScaledChar(startX + dx, startY + dy, 'E');
+        }
+    }
+    
+    // Draw 'S' with thickness
+    for (int dx = 0; dx < thickness; dx++) {
+        for (int dy = 0; dy < thickness; dy++) {
+            Con_DrawScaledChar(startX + charW + dx, startY + dy, 'S');
+        }
+    }
+    
+    // Draw 'C' with thickness
+    for (int dx = 0; dx < thickness; dx++) {
+        for (int dy = 0; dy < thickness; dy++) {
+            Con_DrawScaledChar(startX + charW*2 + dx, startY + dy, 'C');
+        }
+    }
+    
+    // Restore original scale
+    if (con_scale) con_scale->value = oldScale;
+}
+
+/*
+==================
+Con_DrawBigTAB
+Draws TAB text much bigger - same style as ESC
+==================
+*/
+static void Con_DrawBigTAB(int startX, int startY, vec4_t color) {
+    re.SetColor(color);
+    
+    // Use same scale as ESC
+    float oldScale = con_scale ? con_scale->value : 1.0f;
+    if (con_scale) con_scale->value = 6.0f;
+    
+    int charW = Con_GetScaledCharWidth();
+    int charH = Con_GetScaledCharHeight();
+    
+    // Draw each letter multiple times with slight offsets to make them thicker/bolder
+    int thickness = 3;  // Same thickness as ESC
+    
+    // Draw 'T' with thickness
+    for (int dx = 0; dx < thickness; dx++) {
+        for (int dy = 0; dy < thickness; dy++) {
+            Con_DrawScaledChar(startX + dx, startY + dy, 'T');
+        }
+    }
+    
+    // Draw 'A' with thickness
+    for (int dx = 0; dx < thickness; dx++) {
+        for (int dy = 0; dy < thickness; dy++) {
+            Con_DrawScaledChar(startX + charW + dx, startY + dy, 'A');
+        }
+    }
+    
+    // Draw 'B' with thickness
+    for (int dx = 0; dx < thickness; dx++) {
+        for (int dy = 0; dy < thickness; dy++) {
+            Con_DrawScaledChar(startX + charW*2 + dx, startY + dy, 'B');
+        }
+    }
+    
+    // Restore original scale
+    if (con_scale) con_scale->value = oldScale;
 }

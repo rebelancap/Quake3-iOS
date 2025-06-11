@@ -120,6 +120,7 @@ static int vidRestartTime = 0;
 
 static int in_eventTime = 0;
 
+
 //static SDL_Window *SDL_window = NULL;
 extern SDL_Window *SDL_window; //
 
@@ -1511,6 +1512,147 @@ static void IN_JoyMove( void )
 
 /*
 ===============
+ HandleTouchInput
+===============
+*/
+
+static void HandleTouchInput(float normalizedX, float normalizedY, qboolean isPressed) {
+    int screenWidth = cls.glconfig.vidWidth;
+    int screenHeight = cls.glconfig.vidHeight;
+    int screenX = (int)(normalizedX * screenWidth);
+    int screenY = (int)(normalizedY * screenHeight);
+    
+    extern qboolean Con_VirtualKeyboardActive(void);
+    
+    if (Con_VirtualKeyboardActive()) {
+        extern void Con_VirtualKeyboardTouch(float x, float y, float consoleHeight);
+        float consoleHeight = screenHeight * 0.5f;
+        Con_VirtualKeyboardTouch((float)screenX, (float)screenY, consoleHeight);
+        return;
+    }
+    else if ((Key_GetCatcher() & KEYCATCH_UI) && !(Key_GetCatcher() & KEYCATCH_CONSOLE)) {
+        if (isPressed == qtrue) {
+            // Show navigation arrows on any touch
+            extern void Con_TouchNavigation_SetVisible(void);
+            Con_TouchNavigation_SetVisible();
+            
+            // Calculate touch zones based on new arrow positions
+            float centerX = 0.5f;
+            float centerY = 0.5f;
+            
+            // Convert pixel distance to normalized coordinates
+            float arrowDistanceX = 300.0f / screenWidth;   // 300 pixels from center
+            float arrowDistanceY = 300.0f / screenHeight;  // 300 pixels from center
+            
+            float arrowTouchSize = 0.2f;   // Touch zones for arrows
+            float centerTouchSize = 0.15f; // Smaller zone specifically for center
+                        
+            qboolean actionTaken = qfalse;
+            
+            // CHECK CENTER FIRST (highest priority)
+            float distanceFromCenterX = fabs(normalizedX - centerX);
+            float distanceFromCenterY = fabs(normalizedY - centerY);
+            
+            if (distanceFromCenterX <= centerTouchSize/2 && distanceFromCenterY <= centerTouchSize/2) {
+                Com_QueueEvent(in_eventTime, SE_KEY, K_ENTER, qtrue, 0, NULL);
+                Com_QueueEvent(in_eventTime, SE_KEY, K_ENTER, qfalse, 0, NULL);
+                actionTaken = qtrue;
+            }
+            
+            // Only check arrows if center wasn't touched
+            if (!actionTaken) {
+                // UP arrow zone
+                float upY = centerY - arrowDistanceY;
+                float distanceFromUpX = fabs(normalizedX - centerX);
+                float distanceFromUpY = fabs(normalizedY - upY);
+                
+                if (distanceFromUpX <= arrowTouchSize/2 && distanceFromUpY <= arrowTouchSize/2) {
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_UPARROW, qtrue, 0, NULL);
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_UPARROW, qfalse, 0, NULL);
+                    actionTaken = qtrue;
+                }
+            }
+            
+            if (!actionTaken) {
+                // DOWN arrow zone
+                float downY = centerY + arrowDistanceY;
+                float distanceFromDownX = fabs(normalizedX - centerX);
+                float distanceFromDownY = fabs(normalizedY - downY);
+                
+                if (distanceFromDownX <= arrowTouchSize/2 && distanceFromDownY <= arrowTouchSize/2) {
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_DOWNARROW, qtrue, 0, NULL);
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_DOWNARROW, qfalse, 0, NULL);
+                    actionTaken = qtrue;
+                }
+            }
+            
+            if (!actionTaken) {
+                // LEFT arrow zone
+                float leftX = centerX - arrowDistanceX;
+                float distanceFromLeftX = fabs(normalizedX - leftX);
+                float distanceFromLeftY = fabs(normalizedY - centerY);
+                
+                if (distanceFromLeftX <= arrowTouchSize/2 && distanceFromLeftY <= arrowTouchSize/2) {
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_LEFTARROW, qtrue, 0, NULL);
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_LEFTARROW, qfalse, 0, NULL);
+                    actionTaken = qtrue;
+                }
+            }
+            
+            if (!actionTaken) {
+                // RIGHT arrow zone
+                float rightX = centerX + arrowDistanceX;
+                float distanceFromRightX = fabs(normalizedX - rightX);
+                float distanceFromRightY = fabs(normalizedY - centerY);
+                
+                if (distanceFromRightX <= arrowTouchSize/2 && distanceFromRightY <= arrowTouchSize/2) {
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_RIGHTARROW, qtrue, 0, NULL);
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_RIGHTARROW, qfalse, 0, NULL);
+                    actionTaken = qtrue;
+                }
+            }
+            
+            // ESC zone (larger and more forgiving)
+            if (!actionTaken) {
+                float escLeft = 60.0f / screenWidth;    // 20 pixels more to the left
+                float escRight = 220.0f / screenWidth;  // 20 pixels more to the right
+                float escTop = 60.0f / screenHeight;    // 20 pixels higher
+                float escBottom = 160.0f / screenHeight; // 20 pixels lower
+                
+                if (normalizedX >= escLeft && normalizedX <= escRight &&
+                    normalizedY >= escTop && normalizedY <= escBottom) {
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_ESCAPE, qtrue, 0, NULL);
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_ESCAPE, qfalse, 0, NULL);
+                    actionTaken = qtrue;
+                }
+            }
+
+            // TAB zone (larger and positioned lower)
+            if (!actionTaken) {
+                float tabLeft = 60.0f / screenWidth;    // 20 pixels more to the left
+                float tabRight = 220.0f / screenWidth;  // 20 pixels more to the right
+                float tabTop = 310.0f / screenHeight;   // Updated for new position
+                float tabBottom = 410.0f / screenHeight; // 20 pixels larger zone
+                
+                if (normalizedX >= tabLeft && normalizedX <= tabRight &&
+                    normalizedY >= tabTop && normalizedY <= tabBottom) {
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_TAB, qtrue, 0, NULL);
+                    Com_QueueEvent(in_eventTime, SE_KEY, K_TAB, qfalse, 0, NULL);
+                    actionTaken = qtrue;
+                }
+            }
+            // For navigation arrows, don't send mouse events either
+            return;
+        }
+    }
+    // Only send mouse events for non-virtual keyboard touches
+    if (isPressed != -1) {
+        Com_QueueEvent(in_eventTime, SE_KEY, K_MOUSE1, isPressed, 0, NULL);
+    }
+}
+
+/*
+===============
 IN_ProcessEvents
 ===============
 */
@@ -1711,45 +1853,42 @@ static void IN_ProcessEvents( void )
 				}
 				break;
                 
-                case SDL_FINGERDOWN:
-                // Add virtual keyboard touch handling
-                extern qboolean Con_VirtualKeyboardActive(void);
-                extern void Con_VirtualKeyboardTouch(float x, float y, float consoleHeight);
-                
-                if (Con_VirtualKeyboardActive()) {
-//                    extern float con_displayFrac;  // Try this first
-                    float consoleHeight = cls.glconfig.vidHeight * 0.5f;
-                    
-                    // Convert normalized coordinates to screen coordinates
-                    float touchX = e.tfinger.x * cls.glconfig.vidWidth;
-                    float touchY = e.tfinger.y * cls.glconfig.vidHeight;
-                    
-                    Con_VirtualKeyboardTouch(touchX, touchY, consoleHeight);
+            case SDL_FINGERDOWN:
+                #ifdef USE_IOS_GAMECONTROLLER
+                // Skip touch if controller is active and we're in game
+                if (iOS_IsControllerConnected() && !(Key_GetCatcher() & (KEYCATCH_UI | KEYCATCH_CONSOLE))) {
                     break;
                 }
-                case SDL_FINGERUP:
-                    if (Key_GetCatcher( ) & KEYCATCH_UI) {
-                        
-                        float ratio43 = 640.0f / 480.0f;
-                        float ratio = (float)cls.glconfig.vidWidth / (float)cls.glconfig.vidHeight;
-                        
-                        // If we're not on a 4:3 screen, do the math to figure out how to
-                        // translate coordinates to a 4:3 equivalent
-                        if (ratio43 != ratio) {
-                            float width43 = 480 * ratio;
-                            float gap = 0.5 * (width43 - (480.0f*(640.0f/480.0f)));
-                            float finger = (e.tfinger.x * width43);
-                            float fingerMinusGap = (e.tfinger.x * width43) - gap;
+                #endif
+                
+                HandleTouchInput(e.tfinger.x, e.tfinger.y, qtrue);
+                break;
 
-                            CL_MouseEvent(fingerMinusGap, e.tfinger.y * 480, Sys_Milliseconds(), qtrue);
-                        } else {
-                            CL_MouseEvent(e.tfinger.x * 640, e.tfinger.y * 480, Sys_Milliseconds(), qtrue);
-                        }
-                        
-                        Com_QueueEvent( in_eventTime, SE_KEY, K_MOUSE1,
-                            ( e.type == SDL_FINGERDOWN ? qtrue : qfalse ), 0, NULL );
-                    }
+            case SDL_FINGERUP:
+                #ifdef USE_IOS_GAMECONTROLLER
+                if (iOS_IsControllerConnected() && !(Key_GetCatcher() & (KEYCATCH_UI | KEYCATCH_CONSOLE))) {
                     break;
+                }
+                #endif
+                
+                // For virtual keyboard, don't process finger up at all
+                extern qboolean Con_VirtualKeyboardActive(void);
+                if (!Con_VirtualKeyboardActive()) {
+                    HandleTouchInput(e.tfinger.x, e.tfinger.y, qfalse);
+                }
+                break;
+
+            case SDL_FINGERMOTION:
+                #ifdef USE_IOS_GAMECONTROLLER
+                if (iOS_IsControllerConnected() && !(Key_GetCatcher() & (KEYCATCH_UI | KEYCATCH_CONSOLE))) {
+                    break;
+                }
+                #endif
+                
+                // Motion only (no click)
+                HandleTouchInput(e.tfinger.x, e.tfinger.y, -1);
+                break;
+
 
 			default:
 				break;

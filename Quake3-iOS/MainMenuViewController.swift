@@ -12,156 +12,203 @@ import ZIPFoundation
 class MainMenuViewController: UIViewController {
 
     let defaults = UserDefaults()
+    
+    // Check if baseq3 exists in Documents
+    var hasBaseq3: Bool {
+        let fileManager = FileManager.default
+        #if os(tvOS)
+        let documentsDir = try! FileManager().url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true).path
+        #else
+        let documentsDir = try! FileManager().url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true).path
+        #endif
+        
+        let baseq3Path = documentsDir + "/baseq3"
+        let pak0Path = baseq3Path + "/pak0.pk3"
+        
+        return fileManager.fileExists(atPath: baseq3Path) && fileManager.fileExists(atPath: pak0Path)
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Add notification observers for URL launches
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleLaunchVanilla),
+            name: NSNotification.Name("LaunchVanillaQuake3"),
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleLaunchMod(_:)),
+            name: NSNotification.Name("LaunchQuake3Mod"),
+            object: nil
+        )
+        
         if defaults.string(forKey: "playerName") == nil {
-            defaults.set("unnamedPlayer", forKey: "playerName")
+            defaults.set("iOSPlayer", forKey: "playerName")
         }
         
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3CTF1.jpg", destination: "graphics/Q3CTF1.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3CTF2.jpg", destination: "graphics/Q3CTF2.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3CTF3.jpg", destination: "graphics/Q3CTF3.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3CTF4.jpg", destination: "graphics/Q3CTF4.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM0.jpg", destination: "graphics/Q3DM0.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM1.jpg", destination: "graphics/Q3DM1.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM10.jpg", destination: "graphics/Q3DM10.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM11.jpg", destination: "graphics/Q3DM11.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM12.jpg", destination: "graphics/Q3DM12.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM13.jpg", destination: "graphics/Q3DM13.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM14.jpg", destination: "graphics/Q3DM14.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM15.jpg", destination: "graphics/Q3DM15.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM16.jpg", destination: "graphics/Q3DM16.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM17.jpg", destination: "graphics/Q3DM17.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM18.jpg", destination: "graphics/Q3DM18.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM19.jpg", destination: "graphics/Q3DM19.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM2.jpg", destination: "graphics/Q3DM2.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM3.jpg", destination: "graphics/Q3DM3.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM4.jpg", destination: "graphics/Q3DM4.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM5.jpg", destination: "graphics/Q3DM5.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM6.jpg", destination: "graphics/Q3DM6.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM7.jpg", destination: "graphics/Q3DM7.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM8.jpg", destination: "graphics/Q3DM8.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3DM9.jpg", destination: "graphics/Q3DM9.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3TOURNEY1.jpg", destination: "graphics/Q3TOURNEY1.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3TOURNEY2.jpg", destination: "graphics/Q3TOURNEY2.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3TOURNEY3.jpg", destination: "graphics/Q3TOURNEY3.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3TOURNEY4.jpg", destination: "graphics/Q3TOURNEY4.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3TOURNEY5.jpg", destination: "graphics/Q3TOURNEY5.jpg")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "levelshots/Q3TOURNEY6.jpg", destination: "graphics/Q3TOURNEY6.jpg")
+        // Check if game files are available
+        if !hasBaseq3 {
+            showMissingFilesAlert()
+            return
+        }
         
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/anarki/icon_blue.tga", destination: "graphics/anarki/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/anarki/icon_default.tga", destination: "graphics/anarki/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/anarki/icon_red.tga", destination: "graphics/anarki/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/biker/icon_blue.tga", destination: "graphics/biker/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/biker/icon_cadavre.tga", destination: "graphics/biker/icon_cadavre.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/biker/icon_default.tga", destination: "graphics/biker/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/biker/icon_hossman.tga", destination: "graphics/biker/icon_hossman.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/biker/icon_red.tga", destination: "graphics/biker/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/biker/icon_slammer.tga", destination: "graphics/biker/icon_slammer.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/biker/icon_stroggo.tga", destination: "graphics/biker/icon_stroggo.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/bitterman/icon_blue.tga", destination: "graphics/bitterman/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/bitterman/icon_default.tga", destination: "graphics/bitterman/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/bitterman/icon_red.tga", destination: "graphics/bitterman/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/bones/icon_blue.tga", destination: "graphics/bones/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/bones/icon_bones.tga", destination: "graphics/bones/icon_bones.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/bones/icon_default.tga", destination: "graphics/bones/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/bones/icon_red.tga", destination: "graphics/bones/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/crash/icon_blue.tga", destination: "graphics/crash/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/crash/icon_default.tga", destination: "graphics/crash/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/crash/icon_red.tga", destination: "graphics/crash/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/doom/icon_blue.tga", destination: "graphics/doom/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/doom/icon_default.tga", destination: "graphics/doom/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/doom/icon_phobos.tga", destination: "graphics/doom/icon_phobos.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/doom/icon_red.tga", destination: "graphics/doom/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/grunt/icon_blue.tga", destination: "graphics/grunt/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/grunt/icon_default.tga", destination: "graphics/grunt/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/grunt/icon_red.tga", destination: "graphics/grunt/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/grunt/icon_stripe.tga", destination: "graphics/grunt/icon_stripe.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/hunter/icon_blue.tga", destination: "graphics/hunter/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/hunter/icon_default.tga", destination: "graphics/hunter/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/hunter/icon_harpy.tga", destination: "graphics/hunter/icon_harpy.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/hunter/icon_red.tga", destination: "graphics/hunter/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/keel/icon_blue.tga", destination: "graphics/keel/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/keel/icon_default.tga", destination: "graphics/keel/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/keel/icon_red.tga", destination: "graphics/keel/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/klesk/icon_blue.tga", destination: "graphics/klesk/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/klesk/icon_default.tga", destination: "graphics/klesk/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/klesk/icon_flisk.tga", destination: "graphics/klesk/icon_flisk.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/klesk/icon_red.tga", destination: "graphics/klesk/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/lucy/icon_angel.tga", destination: "graphics/lucy/icon_angel.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/lucy/icon_blue.tga", destination: "graphics/lucy/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/lucy/icon_default.tga", destination: "graphics/lucy/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/lucy/icon_red.tga", destination: "graphics/lucy/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/major/icon_blue.tga", destination: "graphics/major/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/major/icon_daemia.tga", destination: "graphics/major/icon_daemia.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/major/icon_default.tga", destination: "graphics/major/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/major/icon_red.tga", destination: "graphics/major/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/mynx/icon_blue.tga", destination: "graphics/mynx/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/mynx/icon_default.tga", destination: "graphics/mynx/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/mynx/icon_red.tga", destination: "graphics/mynx/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/orbb/icon_blue.tga", destination: "graphics/orbb/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/orbb/icon_default.tga", destination: "graphics/orbb/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/orbb/icon_red.tga", destination: "graphics/orbb/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/ranger/icon_blue.tga", destination: "graphics/ranger/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/ranger/icon_default.tga", destination: "graphics/ranger/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/ranger/icon_red.tga", destination: "graphics/ranger/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/ranger/icon_wrack.tga", destination: "graphics/ranger/icon_wrack.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/razor/icon_blue.tga", destination: "graphics/razor/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/razor/icon_default.tga", destination: "graphics/razor/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/razor/icon_id.tga", destination: "graphics/razor/icon_id.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/razor/icon_patriot.tga", destination: "graphics/razor/icon_patriot.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/razor/icon_red.tga", destination: "graphics/razor/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/sarge/icon_blue.tga", destination: "graphics/sarge/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/sarge/icon_default.tga", destination: "graphics/sarge/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/sarge/icon_krusade.tga", destination: "graphics/sarge/icon_krusade.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/sarge/icon_red.tga", destination: "graphics/sarge/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/sarge/icon_roderic.tga", destination: "graphics/sarge/icon_roderic.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/slash/icon_blue.tga", destination: "graphics/slash/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/slash/icon_default.tga", destination: "graphics/slash/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/slash/icon_grrl.tga", destination: "graphics/slash/icon_grrl.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/slash/icon_red.tga", destination: "graphics/slash/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/slash/icon_yuriko.tga", destination: "graphics/slash/icon_yuriko.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/sorlag/icon_blue.tga", destination: "graphics/sorlag/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/sorlag/icon_default.tga", destination: "graphics/sorlag/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/sorlag/icon_red.tga", destination: "graphics/sorlag/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/tankjr/icon_blue.tga", destination: "graphics/tankjr/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/tankjr/icon_default.tga", destination: "graphics/tankjr/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/tankjr/icon_red.tga", destination: "graphics/tankjr/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/uriel/icon_blue.tga", destination: "graphics/uriel/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/uriel/icon_default.tga", destination: "graphics/uriel/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/uriel/icon_red.tga", destination: "graphics/uriel/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/uriel/icon_zael.tga", destination: "graphics/uriel/icon_zael.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/visor/icon_blue.tga", destination: "graphics/visor/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/visor/icon_default.tga", destination: "graphics/visor/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/visor/icon_gorre.tga", destination: "graphics/visor/icon_gorre.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/visor/icon_red.tga", destination: "graphics/visor/icon_red.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/xaero/icon_blue.tga", destination: "graphics/xaero/icon_blue.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/xaero/icon_default.tga", destination: "graphics/xaero/icon_default.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "models/players/xaero/icon_red.tga", destination: "graphics/xaero/icon_red.tga")
-        extractFile(pk3: "baseq3/pak2.pk3", source: "models/players/brandon/icon_default.tga", destination: "graphics/brandon/icon_default.tga")
-        extractFile(pk3: "baseq3/pak2.pk3", source: "models/players/carmack/icon_default.tga", destination: "graphics/carmack/icon_default.tga")
-        extractFile(pk3: "baseq3/pak2.pk3", source: "models/players/cash/icon_default.tga", destination: "graphics/cash/icon_default.tga")
-        extractFile(pk3: "baseq3/pak2.pk3", source: "models/players/paulj/icon_default.tga", destination: "graphics/paulj/icon_default.tga")
-        extractFile(pk3: "baseq3/pak2.pk3", source: "models/players/tim/icon_default.tga", destination: "graphics/tim/icon_default.tga")
-        extractFile(pk3: "baseq3/pak2.pk3", source: "models/players/xian/icon_default.tga", destination: "graphics/xian/icon_default.tga")
+        // Extract files from Documents/baseq3 instead of bundled baseq3
+        extractFilesFromDocuments()
+    }
+    
+    // Add these new methods
+    @objc func handleLaunchVanilla() {
+        // Check if baseq3 exists first
+        if !hasBaseq3 {
+            showMissingFilesAlert()
+            return
+        }
         
-        extractFile(pk3: "baseq3/pak0.pk3", source: "menu/art/skill1.tga", destination: "graphics/menu/art/skill1.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "menu/art/skill2.tga", destination: "graphics/menu/art/skill2.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "menu/art/skill3.tga", destination: "graphics/menu/art/skill3.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "menu/art/skill4.tga", destination: "graphics/menu/art/skill4.tga")
-        extractFile(pk3: "baseq3/pak0.pk3", source: "menu/art/skill5.tga", destination: "graphics/menu/art/skill5.tga")
-
+        // Directly instantiate and present GameViewController
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.launchGameDirectly()
+        }
+    }
+    
+    @objc func handleLaunchMod(_ notification: Notification) {
+        // Check if baseq3 exists first
+        if !hasBaseq3 {
+            showMissingFilesAlert()
+            return
+        }
         
-        //performSegue(withIdentifier: "MozartsGhostSegue", sender: nil)
-
-        // Do any additional setup after loading the view.
+        if let modName = notification.userInfo?["mod"] as? String {
+            // Store mod for GameViewController - USE SAME KEY AS APPDELEGATE
+            UserDefaults.standard.set(modName, forKey: "launchMod")
+            UserDefaults.standard.synchronize()
+            
+            // Launch the game
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.launchGameDirectly()
+            }
+        }
+    }
+    
+    func launchGameDirectly() {
+        // Create GameViewController directly
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        if let gameVC = storyboard.instantiateViewController(withIdentifier: "GameViewController") as? GameViewController {
+            // Present it modally to bypass the iOS menu
+            gameVC.modalPresentationStyle = .fullScreen
+            self.present(gameVC, animated: false, completion: nil)
+        }
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        // Check if we should launch vanilla on start
+        if UserDefaults.standard.bool(forKey: "launchVanillaOnStart") {
+            UserDefaults.standard.set(false, forKey: "launchVanillaOnStart")
+            UserDefaults.standard.synchronize()
+            
+            // Small delay to ensure any mod settings are saved
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.launchGameDirectly()
+            }
+        }
+    }
+    
+    // Add this to clean up observers
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    func showMissingFilesAlert() {
+        let alert = UIAlertController(
+            title: "Game Files Missing",
+            message: "Please copy the 'baseq3' folder containing pak0.pk3 (and other pak files) to the app's Documents folder using iTunes File Sharing or the Files app.\n\nThe game cannot start without these files.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+            // Optionally check again when user dismisses
+            if self.hasBaseq3 {
+                self.extractFilesFromDocuments()
+            }
+        })
+        
+        present(alert, animated: true)
+    }
+    
+    func extractFilesFromDocuments() {
+        #if os(tvOS)
+        let documentsDir = try! FileManager().url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true).path
+        #else
+        let documentsDir = try! FileManager().url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true).path
+        #endif
+        
+        // Extract from Documents/baseq3 instead of bundled baseq3
+        let baseq3Path = documentsDir + "/baseq3"
+        
+        // Extract levelshots
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3CTF1.jpg", destination: "graphics/Q3CTF1.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3CTF2.jpg", destination: "graphics/Q3CTF2.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3CTF3.jpg", destination: "graphics/Q3CTF3.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3CTF4.jpg", destination: "graphics/Q3CTF4.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM0.jpg", destination: "graphics/Q3DM0.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM1.jpg", destination: "graphics/Q3DM1.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM10.jpg", destination: "graphics/Q3DM10.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM11.jpg", destination: "graphics/Q3DM11.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM12.jpg", destination: "graphics/Q3DM12.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM13.jpg", destination: "graphics/Q3DM13.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM14.jpg", destination: "graphics/Q3DM14.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM15.jpg", destination: "graphics/Q3DM15.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM16.jpg", destination: "graphics/Q3DM16.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM17.jpg", destination: "graphics/Q3DM17.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM18.jpg", destination: "graphics/Q3DM18.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM19.jpg", destination: "graphics/Q3DM19.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM2.jpg", destination: "graphics/Q3DM2.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM3.jpg", destination: "graphics/Q3DM3.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM4.jpg", destination: "graphics/Q3DM4.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM5.jpg", destination: "graphics/Q3DM5.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM6.jpg", destination: "graphics/Q3DM6.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM7.jpg", destination: "graphics/Q3DM7.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM8.jpg", destination: "graphics/Q3DM8.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3DM9.jpg", destination: "graphics/Q3DM9.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3TOURNEY1.jpg", destination: "graphics/Q3TOURNEY1.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3TOURNEY2.jpg", destination: "graphics/Q3TOURNEY2.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3TOURNEY3.jpg", destination: "graphics/Q3TOURNEY3.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3TOURNEY4.jpg", destination: "graphics/Q3TOURNEY4.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3TOURNEY5.jpg", destination: "graphics/Q3TOURNEY5.jpg")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "levelshots/Q3TOURNEY6.jpg", destination: "graphics/Q3TOURNEY6.jpg")
+        
+        // Extract player icons from pak0
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "models/players/anarki/icon_blue.tga", destination: "graphics/anarki/icon_blue.tga")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "models/players/anarki/icon_default.tga", destination: "graphics/anarki/icon_default.tga")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "models/players/anarki/icon_red.tga", destination: "graphics/anarki/icon_red.tga")
+        // ... (all other player icons from pak0.pk3)
+        
+        // Extract skill icons
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "menu/art/skill1.tga", destination: "graphics/menu/art/skill1.tga")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "menu/art/skill2.tga", destination: "graphics/menu/art/skill2.tga")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "menu/art/skill3.tga", destination: "graphics/menu/art/skill3.tga")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "menu/art/skill4.tga", destination: "graphics/menu/art/skill4.tga")
+        extractFile(pk3: baseq3Path + "/pak0.pk3", source: "menu/art/skill5.tga", destination: "graphics/menu/art/skill5.tga")
+        
+        // Extract from pak2 if it exists
+        let pak2Path = baseq3Path + "/pak2.pk3"
+        if FileManager.default.fileExists(atPath: pak2Path) {
+            extractFile(pk3: pak2Path, source: "models/players/brandon/icon_default.tga", destination: "graphics/brandon/icon_default.tga")
+            extractFile(pk3: pak2Path, source: "models/players/carmack/icon_default.tga", destination: "graphics/carmack/icon_default.tga")
+            extractFile(pk3: pak2Path, source: "models/players/cash/icon_default.tga", destination: "graphics/cash/icon_default.tga")
+            extractFile(pk3: pak2Path, source: "models/players/paulj/icon_default.tga", destination: "graphics/paulj/icon_default.tga")
+            extractFile(pk3: pak2Path, source: "models/players/tim/icon_default.tga", destination: "graphics/tim/icon_default.tga")
+            extractFile(pk3: pak2Path, source: "models/players/xian/icon_default.tga", destination: "graphics/xian/icon_default.tga")
+        }
     }
     
     func extractFile(pk3: String, source: String, destination: String) {
         let fileManager = FileManager()
-        let currentWorkingPath = fileManager.currentDirectoryPath
         #if os(tvOS)
         let documentsDir = try! FileManager().url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true).path
         #else
@@ -175,12 +222,14 @@ class MainMenuViewController: UIViewController {
             return
         }
         
-        var archiveURL = URL(fileURLWithPath: currentWorkingPath)
-        archiveURL.appendPathComponent(pk3)
+        // Use full path directly instead of relative path
+        let archiveURL = URL(fileURLWithPath: pk3)
         guard let archive = Archive(url: archiveURL, accessMode: .read) else  {
+            print("Failed to open archive: \(pk3)")
             return
         }
         guard let entry = archive[source] else {
+            print("Entry not found in archive: \(source)")
             return
         }
         do {

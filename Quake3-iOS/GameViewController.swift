@@ -39,11 +39,62 @@ class GameViewController: UIViewController {
         let documentsDir = try! FileManager().url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true).path
         #endif
         
+        // Set home directory to Documents folder where baseq3 should be
         Sys_SetHomeDir(documentsDir)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
 
-        var argv: [String?] = [ Bundle.main.resourcePath! + "/quake3", "+set", "com_basegame", "baseq3", "+name", self.defaults.string(forKey: "playerName")]
+            // Use a dummy path for the executable since we're not bundling resources
+            var argv: [String?] = [ Bundle.main.bundlePath + "/quake3", "+set", "com_basegame", "baseq3"]
+            
+            // Add fs_basepath to point to Documents directory
+            argv.append("+set")
+            argv.append("fs_basepath")
+            argv.append(documentsDir)
+            
+            // Add fs_homepath to point to Documents directory as well
+            argv.append("+set")
+            argv.append("fs_homepath")
+            argv.append(documentsDir)
+            
+            // Disable pure server checks
+            argv.append("+set")
+            argv.append("sv_pure")
+            argv.append("0")
+            
+            // CHECK FOR MOD LAUNCH - Now only checking launchMod key
+            if let modName = UserDefaults.standard.string(forKey: "launchMod") {
+                // Clear the stored mod name
+                UserDefaults.standard.removeObject(forKey: "launchMod")
+                UserDefaults.standard.synchronize()
+                
+                print("Loading mod: \(modName)")
+                
+                // Add mod-specific arguments
+                argv.append("+set")
+                argv.append("fs_game")
+                argv.append(modName)
+                
+                // For Urban Terror specifically, you might want to add:
+                if modName == "q3ut4" {
+                    // Urban Terror specific settings
+                    argv.append("+set")
+                    argv.append("cl_autodownload")
+                    argv.append("1")
+                }
+            }
+            
+            // CHECK FOR MAP
+            if let mapName = UserDefaults.standard.string(forKey: "selectedMap") {
+                UserDefaults.standard.removeObject(forKey: "selectedMap")
+                UserDefaults.standard.synchronize()
+                
+                self.selectedMap = mapName
+            }
+            
+            // Add player name
+            argv.append("+name")
+            argv.append(self.defaults.string(forKey: "playerName") ?? "iOSPlayer")
 
             if !self.selectedMap.isEmpty {
                 if self.botMatch {
@@ -57,12 +108,6 @@ class GameViewController: UIViewController {
                     argv.append("+g_spSkill")
                     argv.append(String(self.selectedDifficulty))
                 }
-                
-                // For single-player, we turn off pure servers so the absolute
-                // cursor positioning can work in-game
-                argv.append("+set")
-                argv.append("sv_pure")
-                argv.append("0")
             }
                 
             if self.selectedServer != nil {
@@ -70,7 +115,7 @@ class GameViewController: UIViewController {
                 argv.append("\(self.selectedServer!.ip):\(self.selectedServer!.port)")
             }
             
-            if self.botMatch {                
+            if self.botMatch {
                 for bot in self.bots {
                     argv.append("+addbot")
                     argv.append(bot.name)
@@ -128,6 +173,7 @@ class GameViewController: UIViewController {
             argv.append("in_joystickUseAnalog")
             argv.append("1")
             
+            // Controller bindings
             argv.append("+bind")
             argv.append("PAD0_RIGHTTRIGGER")
             argv.append("\"+attack\"")

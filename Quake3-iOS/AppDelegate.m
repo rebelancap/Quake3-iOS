@@ -26,6 +26,8 @@
 @end
 
 @interface AppDelegate ()
+@property (nonatomic, strong) NSString *launchMode;
+@property (nonatomic, strong) NSString *launchMod;
 @end
 
 @implementation AppDelegate
@@ -60,6 +62,111 @@
     self.uiwindow.rootViewController = self.rootNavigationController;
     
     [self.uiwindow makeKeyAndVisible];
+}
+
+// Add these methods to handle URL launching
+- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
+    return [self handleQuakeURL:url];
+}
+
+// For iOS 8 compatibility
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation {
+    return [self handleQuakeURL:url];
+}
+
+- (BOOL)handleQuakeURL:(NSURL *)url {
+    if ([url.scheme isEqualToString:@"quake3"]) {
+        NSString *host = url.host;
+        
+        // Parse URL parameters
+        NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+        NSString *mod = nil;
+        NSString *map = nil;
+        
+        for (NSURLQueryItem *item in components.queryItems) {
+            if ([item.name isEqualToString:@"mod"]) {
+                mod = item.value;
+            } else if ([item.name isEqualToString:@"map"]) {
+                map = item.value;
+            }
+        }
+        
+        // Store map if provided
+        if (map) {
+            [[NSUserDefaults standardUserDefaults] setObject:map forKey:@"selectedMap"];
+        }
+        
+        if ([host isEqualToString:@"vanilla"]) {
+            self.launchMode = @"vanilla";
+            self.launchMod = nil;
+            [self launchVanillaQuake3];
+            return YES;
+        } else if ([host isEqualToString:@"mod"] && mod) {
+            self.launchMode = @"mod";
+            self.launchMod = mod;
+            [self launchQuake3WithMod:mod];
+            return YES;
+        }
+    }
+    return NO;
+}
+
+- (void)launchVanillaQuake3 {
+    // Store launch preference
+    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"launchVanillaOnStart"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    
+    // Post notification that MainMenuViewController can listen for
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"LaunchVanillaQuake3" object:nil];
+    
+    // If the app is already running, we need to navigate to the game
+    if (self.rootNavigationController && self.rootNavigationController.topViewController) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            // Pop to root first
+            [self.rootNavigationController popToRootViewControllerAnimated:NO];
+            
+            // Get the main menu view controller
+            UIViewController *rootVC = self.rootNavigationController.topViewController;
+            
+            // Try to instantiate GameViewController directly
+            UIStoryboard *mainStoryboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+            UIViewController *gameVC = [mainStoryboard instantiateViewControllerWithIdentifier:@"GameViewController"];
+            if (gameVC) {
+                gameVC.modalPresentationStyle = UIModalPresentationFullScreen;
+                [rootVC presentViewController:gameVC animated:NO completion:nil];
+            }
+        });
+    }
+}
+
+- (void)launchQuake3WithMod:(NSString *)modName {
+    // Store the mod name for GameViewController to use - USE CONSISTENT KEY
+    [[NSUserDefaults standardUserDefaults] setObject:modName forKey:@"launchMod"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    
+    // Store launch preference for cold start
+    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"launchVanillaOnStart"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    
+    // Post notification
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"LaunchQuake3Mod"
+                                                        object:nil
+                                                      userInfo:@{@"mod": modName}];
+    
+    // Navigate to game
+    if (self.rootNavigationController && self.rootNavigationController.topViewController) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.rootNavigationController popToRootViewControllerAnimated:NO];
+            
+            UIViewController *rootVC = self.rootNavigationController.topViewController;
+            UIStoryboard *mainStoryboard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+            UIViewController *gameVC = [mainStoryboard instantiateViewControllerWithIdentifier:@"GameViewController"];
+            if (gameVC) {
+                gameVC.modalPresentationStyle = UIModalPresentationFullScreen;
+                [rootVC presentViewController:gameVC animated:NO completion:nil];
+            }
+        });
+    }
 }
 
 - (void)applicationDidReceiveMemoryWarning:(UIApplication *)application {

@@ -11,6 +11,9 @@ import UIKit
 @_silgen_name("Con_ToggleVirtualKeyboard")
 func Con_ToggleVirtualKeyboard()
 
+@_silgen_name("Cbuf_AddText")
+func Cbuf_AddText(_ text: UnsafePointer<CChar>)
+
 extension SDL_uikitviewcontroller {
     
     // A method of getting around the fact that Swift extensions cannot have stored properties
@@ -28,6 +31,7 @@ extension SDL_uikitviewcontroller {
         static var _prevWeaponButton = UIButton()
         static var _nextWeaponButton = UIButton()
         static var _rightJoystickView = JoyStickView(frame: .zero)
+        static var _quitButton = UIButton()
     }
     
     var fireButton:UIButton {
@@ -137,6 +141,15 @@ extension SDL_uikitviewcontroller {
             Holder._rightJoystickView = newValue
         }
     }
+    
+    var quitButton:UIButton {
+        get {
+            return Holder._quitButton
+        }
+        set(newValue) {
+            Holder._quitButton = newValue
+        }
+    }
 
     @objc func fireButton(rect: CGRect) -> UIButton {
         fireButton = UIButton(frame: CGRect(x: rect.width - 250, y: rect.height - 90, width: 75, height: 75))
@@ -223,6 +236,16 @@ extension SDL_uikitviewcontroller {
         return f1Button
     }
     
+    @objc func quitButton(rect: CGRect) -> UIButton {
+        quitButton = UIButton(frame: CGRect(x: 10, y: 10, width: 30, height: 30))  // Top left
+        quitButton.setTitle(" Q ", for: .normal)
+        quitButton.addTarget(self, action: #selector(self.quitPressed), for: .touchDown)
+        quitButton.layer.borderColor = UIColor.white.cgColor
+        quitButton.layer.borderWidth = CGFloat(1)
+        quitButton.alpha = 0.5
+        return quitButton
+    }
+    
     @objc func prevWeaponButton(rect: CGRect) -> UIButton {
         prevWeaponButton = UIButton(frame: CGRect(x: (rect.width / 3), y: rect.height/2, width: (rect.width / 3), height: rect.height/2))
         prevWeaponButton.addTarget(self, action: #selector(self.prevWeaponPressed), for: .touchDown)
@@ -255,11 +278,12 @@ extension SDL_uikitviewcontroller {
 
     
     @objc func firePressed(sender: UIButton!) {
-        Key_Event(137, qboolean(1), qboolean(1))
+        // Try sending the command directly instead of a key
+        Cbuf_AddText("+attack\n")
     }
-    
+
     @objc func fireReleased(sender: UIButton!) {
-        Key_Event(137, qboolean(0), qboolean(1))
+        Cbuf_AddText("-attack\n")
     }
     
     @objc func jumpPressed(sender: UIButton!) {
@@ -326,16 +350,39 @@ extension SDL_uikitviewcontroller {
     }
     
     @objc func toggleControls(_ hide: Bool) {
-        self.fireButton.isHidden = hide
-        // self.jumpButton.isHidden = hide  // Already commented out
-        self.joystickView.isHidden = hide
-        self.rightJoystickView.isHidden = hide
-        self.buttonStack.isHidden = hide
-        self.prevWeaponButton.isHidden = hide
-        self.nextWeaponButton.isHidden = hide
+        // Check if console is active
+        let consoleActive = (Key_GetCatcher() & KEYCATCH_CONSOLE) != 0
         
-        // Keep F1 (console) button always visible
-        // self.f1Button.isHidden = hide  // Comment this out or remove it
+        // Check if we're in game
+        let inGame = (Key_GetCatcher() & (KEYCATCH_UI | KEYCATCH_CONSOLE)) == 0
+        
+        // Hide these controls when UI is hidden OR when console is active
+        let shouldHide = hide || consoleActive
+        
+        self.fireButton.isHidden = shouldHide
+        // self.jumpButton.isHidden = shouldHide  // Already commented out
+        self.joystickView.isHidden = shouldHide
+        self.rightJoystickView.isHidden = shouldHide
+        self.prevWeaponButton.isHidden = shouldHide
+        self.nextWeaponButton.isHidden = shouldHide
+        
+        // Quit button only visible when in game and no controller
+        #if USE_IOS_GAMECONTROLLER
+        self.quitButton.isHidden = !inGame || iOS_IsControllerConnected()
+        #else
+        self.quitButton.isHidden = !inGame
+        #endif
+        
+        // Always hide these when requested (but not affected by console)
+        self.buttonStack.isHidden = hide
+        
+        // Never hide the F1/C button
+        // self.f1Button.isHidden = hide
+    }
+    
+    @objc func quitPressed(sender: UIButton!) {
+        // Execute killserver command
+        Cbuf_AddText("disconnect\n")
     }
     
     open override func viewDidLoad() {
