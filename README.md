@@ -16,7 +16,7 @@ Checkout [releases](https://github.com/rebelancap/Quake3-iOS/releases/latest) to
 
 - Set up your `.cfg` files (containing your settings and bindings) and place in baseq3 or other mod folders. [Here are my examples](https://github.com/rebelancap/Quake3-iOS/wiki/Configuration-Files-Examples) for baseq3 and q3ut4 (Urban Terror).
 
-- Tap the π symbol in the bottom right corner to launch full version of Quake 3. (A slower way is use the custom menu to create any game, then press START, Exit Arena.) Or create an [iOS Shortcut](https://github.com/rebelancap/Quake3-iOS/wiki/iOS-Shortcuts) to launch directly or your mod and map of choice!
+- Tap the π symbol in the bottom right corner to launch full version of Quake 3. (A slower way is use the simplified frontend to create any game, then press START, Exit Arena.) Or create an [iOS Shortcut](https://github.com/rebelancap/Quake3-iOS/wiki/iOS-Shortcuts) to launch directly, including your mod and map of choice!
 
 - Menu Navigation. You can navigate the Quake 3 menus by using DPAD, A (Enter), B or START (Esc). Or use left joystick to move mouse, Right Trigger to mouse click. These would have to be changed in Xcode, but you can generally change any in-game bindings/preferences with the `.cfg` files. 
 
