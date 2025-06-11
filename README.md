@@ -4,57 +4,19 @@
 
 &nbsp;
 
-Background: I could not get @tomkidd's port to work with any of my controllers: Backbone Pro, Gamesir G8, any bluetooth controllers, etc. I know very little about coding, so Claude is to thank for most of this. Slowly vibe coded in MFi Controller support, mod support, file management support (for `.cfg` files, mods, etc), background handling (stop rendering and flush for more stability/battery life), virtual keyboard & mouse support, hiding on-screen controls when controller is connected, etc. More ideas of mine to come, like iOS shortcuts to launch mods directly, maybe a virtual right joystick for those without controllers, etc.
+Full-featured Quake III Arena port with multiplayer, modern controller support, mod support, console management with virtual keyboard, easy menu navigation with controller, touchscreen controls, and iOS Shortcuts support (to launch a q3 mod directly). 
 
-# Building Quake3-iOS
+## Installation
 
-## Prerequisites
-- Xcode (latest version recommended)
-- iOS Developer Account (free or paid)
-- Quake 3 Arena game files (baseq3 folder)
-
-## Step-by-Step Instructions
-
-**1. Clone the Project**
-- Open Xcode
-- File → Clone Repository
-- Enter: `https://github.com/rebelancap/Quake3-iOS`
-- Choose a location and clone
-
-**2. Add Game Files**
-- In Xcode, select the **Quake3-iOS** target
-- Go to **Build Phases** tab
-- Expand **Copy Bundle Resources**
-- Click the **+** button at the bottom
-- Select **Add Other...**
-- Browse to your `baseq3` folder (contains game files like pak0.pk3)
-- Select the folder and click **Add**
-- Choose **Create folder references** (important!)
-- Click **Finish**
-
-**3. Configure Signing**
-- Select the **Quake3-iOS** target
-- Go to **Signing & Capabilities** tab
-- Change **Team** to your Apple Developer account
-- Change **Bundle Identifier** to something unique (e.g., `com.yourname.quake3ios`)
-
-**4. Build and Run**
-- Connect your iOS device
-- Select your device from the scheme dropdown (top left)
-- Click the **Play** button or press **Cmd+R**
-
-## Notes
-- You'll need legitimate Quake 3 Arena game files
-- First build may take several minutes
-- Make sure your device is trusted for development (Settings → General → VPN & Device Management)
+Checkout [releases](https://github.com/rebelancap/Quake3-iOS/releases/latest) to sideload Quake 3 via [Xcode](https://github.com/rebelancap/Quake3-iOS/wiki/Sideloading-Quake-3.ipa), Sideloadly, Altstore, etc. Or [build](https://github.com/rebelancap/Quake3-iOS/wiki/Building-Quake-3-with-Xcode) it yourself. Then use Files app or macOS Finder to transfer baseq3 folder or other mods.
 
 ## Important Info
 
 Set up your `.cfg` files (containing your settings and bindings) and place in baseq3 or other mod folders. [Here are my examples](https://github.com/rebelancap/Quake3-iOS/wiki/Configuration-Files-Examples) for baseq3 and q3ut4 (Urban Terror).
 
-Use macOS Finder or Files app to transfer files. Copy mod folders to Quake III Arena folder. Put `autoexec.cfg` in the mod folder.
+Use macOS Finder or Files app to transfer baseq3 or mod folders. Put `autoexec.cfg` in their respective folder.
 
-Tap the π symbol in the bottom right corner to launch full version of Quake 3. (A slower way is use the custom menu to create any game, then press START, Exit Arena.) 
+Tap the π symbol in the bottom right corner to launch full version of Quake 3. (A slower way is use the custom menu to create any game, then press START, Exit Arena.) Or create an iOS Shortcut to launch directly or your mod and map of choice!
 
 You can navigate the Quake 3 menus by using DPAD, A (Enter), B or START (Esc). Or use left joystick to move mouse, Right Trigger to left mouse click. These would have to be changed in Xcode, but you can generally change any in-game bindings/preferences with the `.cfg` files. 
 
@@ -63,6 +25,10 @@ Press both thumbsticks down to triggle console + virtual keyboard. (or C button 
 Use `con_scale` to increase text size and con_margin to increase margin padding (if you have a notch). e.g. `con_scale 2.0` & `con_margin 130` is what I use on an iPhone 16 Pro Max.
 
 **Note!** If your controller gets disconnected, you need to restart the game to reconnect the controller. Had to disable SDL controller and enable Native GameController Framework to get MFi controllers to work. Claude and I could not figure out a way to solve this.
+
+---
+
+Background: I could not get @tomkidd's port to work with any of my controllers: Backbone Pro, Gamesir G8, any bluetooth controllers, etc. I know very little about coding, so Claude is to thank for most of this. Slowly vibe coded in features I wanted.
 
 ---
 
