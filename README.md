@@ -18,7 +18,7 @@ Checkout [releases](https://github.com/rebelancap/Quake3-iOS/releases/latest) to
 
 - Tap the π symbol in the bottom right corner to launch full version of Quake 3. (A slower way is use the simplified frontend to create any game, then press START, Exit Arena.) Or create an [iOS Shortcut](https://github.com/rebelancap/Quake3-iOS/wiki/iOS-Shortcuts) to launch directly, including your mod and map of choice!
 
-- Menu Navigation. You can navigate the Quake 3 menus by using DPAD, A (Enter), B or START (Esc). Or use left joystick to move mouse, Right Trigger to mouse click. These would have to be changed in Xcode, but you can generally change any in-game bindings/preferences with the `.cfg` files. 
+- Menu Navigation. You can navigate the Quake 3 menus by using DPAD, A (Enter), B or START (Esc). Or use left joystick to move mouse, Right Trigger to mouse click. These would have to be changed in Xcode, but you can generally change any in-game bindings/preferences with the `.cfg` files. If touch only, theres a DPAD, Enter, Esc, and Tab overlay, then Q (Disconnect) while in-game.
 
 - **Console Management**. Press both thumbsticks down to triggle console + virtual keyboard. (or C button in top right if no controller)
 Use `con_scale` to increase text size and con_margin to increase margin padding (if you have a notch). e.g. `con_scale 2.0` & `con_margin 130` is what I use on an iPhone 16 Pro Max.
